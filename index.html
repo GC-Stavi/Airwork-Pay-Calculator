@@ -114,15 +114,6 @@
             margin-top: 1rem;
         }
 
-        #results-container {
-            margin-top: 2rem;
-            padding: 1.5rem;
-            background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
-        }
-
-
         /* --- Buttons & Controls --- */
         .top-controls {
             position: absolute;
@@ -158,6 +149,77 @@
             background: #e2e8f0;
             color: #475569;
         }
+
+        /* --- Modal Styles --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none; /* Initially hidden */
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            max-width: 700px;
+            width: 90%;
+            position: relative;
+        }
+
+        .modal-close-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #94a3b8;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .modal-content h3, .modal-content h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+
+        .modal-content hr {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 1.5rem 0;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        
+        .results-grid p {
+            margin: 0.5rem 0;
+        }
+        
+        .total-pay-section {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        
+        .total-pay-section p {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #16a34a;
+        }
         
         /* --- DARK MODE STYLES --- */
         body.dark-mode {
@@ -165,7 +227,7 @@
             color: #e2e8f0;
         }
 
-        body.dark-mode .container {
+        body.dark-mode .container, body.dark-mode .modal-content {
             background: #1e293b;
             border: 1px solid #334155;
         }
@@ -178,7 +240,7 @@
             color: #94a3b8;
         }
 
-        body.dark-mode header hr {
+        body.dark-mode header hr, body.dark-mode .modal-content hr {
             border-top-color: #475569;
         }
 
@@ -199,11 +261,13 @@
             color: #e2e8f0;
         }
         
-        body.dark-mode #results-container {
-             background-color: #2d3748;
-             border-color: #4a5568;
+        body.dark-mode .modal-content h3, body.dark-mode .modal-content h4 {
+             color: #f1f5f9;
         }
-
+        
+        body.dark-mode .modal-close-button {
+             color: #94a3b8;
+        }
 
     </style>
 </head>
@@ -254,15 +318,23 @@
             <button class="primary-button" onclick="runCalculation()">Calculate Pay</button>
         </div>
         
-        <div id="results-container">
-            <p>Your calculated pay details will appear here.</p>
-        </div>
-
     </main>
+
+    <!-- Results Modal -->
+    <div id="resultsModal" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close-button" onclick="hideResultsModal()">&times;</button>
+            <div id="modal-results-content">
+                <!-- Results will be dynamically inserted here -->
+            </div>
+        </div>
+    </div>
     
     <script>
+        // --- GLOBAL VARIABLES ---
+        let calculationResults = {};
+
         // --- DATA CONSTANTS (EBA Rates) ---
-        // These are the recalculated rates based on our previous discussion.
         const EBA_DATA = {
             "First Officer": {
                 1: 134645.51, 2: 140812.55, 3: 147931.28, 
@@ -275,11 +347,22 @@
             "ProductivityBonus": {
                 "First Officer": 227.83,
                 "Captain": 355.79
+            },
+            "OvertimeRate": {
+                "First Officer": 78.00,
+                "Captain": 120.00
             }
         };
 
+        // --- UI FUNCTIONS (MODAL & DARK MODE) ---
+        function showResultsModal() {
+            document.getElementById('resultsModal').style.display = 'flex';
+        }
 
-        // --- DARK MODE LOGIC ---
+        function hideResultsModal() {
+            document.getElementById('resultsModal').style.display = 'none';
+        }
+
         function toggleDarkMode() {
             const body = document.body;
             const btn = document.getElementById('darkModeBtn');
@@ -298,7 +381,6 @@
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
             
-            // Auto-populate roster text for demonstration
             document.getElementById('rosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
 Name EmpNo Shortcode EMail BRQ
 guy.kendell@airworkgroup.com
@@ -329,140 +411,155 @@ HTL 0000 MEL 2310 MEL 1020+ FO
 Crew: CP(Y,X): Scott, William, FO: Kendell, Guy
 73P
 PAX 0000 MEL 0600 BNE 0815 0845 FO`;
+            
+            // Close modal if user clicks outside of the content
+            document.getElementById('resultsModal').addEventListener('click', function(event) {
+                if (event.target === this) {
+                    hideResultsModal();
+                }
+            });
         };
 
-        // --- CALCULATION LOGIC ---
+        // --- CALCULATION & PARSING LOGIC ---
+        function parseTimeToHours(timeStr) {
+            if (!timeStr) return 0;
+            timeStr = timeStr.replace(':', '');
+            if (timeStr.length < 4) return 0;
+            const hours = parseInt(timeStr.substring(0, 2), 10);
+            const minutes = parseInt(timeStr.substring(2, 4), 10);
+            return hours + (minutes / 60);
+        }
 
-        /**
-         * Parses the raw text from the roster input.
-         * @param {string} rosterText - The full text pasted by the user.
-         * @returns {object} An object containing parsed data like rank, home base, and flight duties.
-         */
         function parseRoster(rosterText) {
             const lines = rosterText.trim().split('\n');
-            const parsedData = {
-                rank: null,
-                homeBase: null,
-                duties: []
-            };
-
-            // Find header line to extract Home Base from the pilot's info line
+            const parsedData = { rank: null, homeBase: null, duties: [] };
             const pilotInfoLine = lines.find(line => line.includes('BNE FO/73F') || line.includes('MEL CP/73F'));
             if (pilotInfoLine) {
                 const baseMatch = pilotInfoLine.match(/(BNE|MEL|SYD|PER)/);
-                if (baseMatch) {
-                    parsedData.homeBase = baseMatch[0];
-                }
+                if (baseMatch) parsedData.homeBase = baseMatch[0];
             }
-            
-            // Regex to identify if a string is in HH:MM format
             const timeRegex = /^\d{2}:\d{2}$/;
-
-            // Filter for lines that are actual roster entries (start with a day number and day name)
             const dutyLines = lines.filter(line => /^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim()));
-
             dutyLines.forEach(line => {
-                const parts = line.trim().split(/\s+/); // Split by one or more spaces
-                
-                if (parts.length < 3) return; // Skip malformed or irrelevant lines
-
+                const parts = line.trim().split(/\s+/);
+                if (parts.length < 3) return;
+                const dutyCode = parts[2];
+                let dutyHours = 0;
+                if (dutyCode === 'ADMIN') {
+                    const startTime = parseTimeToHours(parts[3]);
+                    const endTime = parseTimeToHours(parts[7]);
+                    if (endTime > startTime) dutyHours = endTime - startTime;
+                } else if (dutyCode.startsWith('QF')) {
+                    const startTime = parseTimeToHours(parts[6]); // STD
+                    const endTime = parseTimeToHours(parts[8]); // STA
+                    if (endTime > startTime) dutyHours = endTime - startTime;
+                }
                 const lastPart = parts[parts.length - 1];
-                const secondLastPart = parts[parts.length - 2];
-                
-                let rankOnLine = null;
-                let blockHoursOnLine = 0;
-
-                // Check if the last part is time (Block Hours)
+                let rankOnLine = null, blockHours = 0;
                 if (timeRegex.test(lastPart)) {
-                    const timeParts = lastPart.split(':');
-                    const hours = parseInt(timeParts[0], 10);
-                    const minutes = parseInt(timeParts[1], 10);
-                    blockHoursOnLine = hours + (minutes / 60);
-
-                    // If BLH exists, rank is the part before it
-                    rankOnLine = secondLastPart;
+                    blockHours = parseTimeToHours(lastPart);
+                    rankOnLine = parts[parts.length - 2];
                 } else {
-                    // If last part is not time, it's potentially the rank, and BLH is 0
                     rankOnLine = lastPart;
                 }
-
-                // Standardize and set the rank for the entire roster (if not already set)
                 if (!parsedData.rank && rankOnLine) {
                     const upperRank = rankOnLine.toUpperCase();
-                    if (upperRank === 'FO') {
-                        parsedData.rank = 'First Officer';
-                    } else if (upperRank === 'CPT' || upperRank === 'CAP') {
-                        parsedData.rank = 'Captain';
-                    }
+                    if (upperRank === 'FO') parsedData.rank = 'First Officer';
+                    else if (upperRank === 'CPT' || upperRank === 'CAP') parsedData.rank = 'Captain';
                 }
-                
-                // Add duty with block hours to the list if they are greater than zero
-                if (blockHoursOnLine > 0) {
-                    parsedData.duties.push({ blockHours: blockHoursOnLine });
-                }
+                parsedData.duties.push({ dutyCode, dutyHours, blockHours });
             });
-
             return parsedData;
+        }
+        
+        function updateModalContent() {
+            const res = calculationResults;
+            const contentDiv = document.getElementById('modal-results-content');
+            
+            if(!res.annualSalary) {
+                contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
+                return;
+            }
+
+            contentDiv.innerHTML = `
+                <h3>Pay Calculation Results</h3>
+                <div class="results-grid">
+                    <p><strong>Rank:</strong></p><p>${res.finalRank}</p>
+                    <p><strong>Home Base:</strong></p><p>${res.homeBase || 'N/A'}</p>
+                    <p><strong>Annual Salary:</strong></p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+                <hr>
+                <h4>Pay Component Breakdown (Fortnightly Estimate)</h4>
+                 <div class="results-grid">
+                    <p>Base Pay:</p><p>$${res.fortnightlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p>Productivity Bonus (${res.bonusHours.toFixed(2)} hrs):</p><p>$${res.productivityBonus.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p>Overtime Pay (${res.overtimeHours.toFixed(2)} hrs):</p><p>$${res.overtimePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+                <hr>
+                <h4>Totals</h4>
+                <div class="results-grid">
+                    <p><strong>Total Block Hours:</strong></p><p>${res.totalBlockHours.toFixed(2)}</p>
+                    <p><strong>Total Duty Hours:</strong></p><p>${res.totalDutyHours.toFixed(2)}</p>
+                </div>
+                <div class="total-pay-section">
+                    <h4>Estimated Total Fortnightly Gross Pay:</h4>
+                    <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                </div>
+            `;
         }
 
         /**
          * Main function to trigger the calculation process.
          */
         function runCalculation() {
-            // 1. Get user inputs from the dropdowns
             const selectedRankByUser = document.getElementById('rankSelect').value;
             const level = document.getElementById('levelSelect').value;
             const rosterText = document.getElementById('rosterInput').value;
-            const resultsContainer = document.getElementById('results-container');
-
-            // 2. Parse the roster text to extract data
-            const rosterData = parseRoster(rosterText);
-
-            // 3. Determine the final rank to use for calculations
-            // Priority: 1. Rank from roster text. 2. User selection from dropdown.
-            const finalRank = rosterData.rank || selectedRankByUser;
-
-            // Auto-select dropdown to match the detected rank for clarity
-            if(rosterData.rank) {
-                document.getElementById('rankSelect').value = rosterData.rank;
-            }
-
-            // 4. Perform salary and bonus calculations
-            const annualSalary = EBA_DATA[finalRank]?.[level];
             
+            const rosterData = parseRoster(rosterText);
+            const finalRank = rosterData.rank || selectedRankByUser;
+            if(rosterData.rank) document.getElementById('rankSelect').value = finalRank;
+
+            const annualSalary = EBA_DATA[finalRank]?.[level];
             if (!annualSalary) {
-                resultsContainer.innerHTML = '<p>Error: Could not find a salary for the selected rank and level.</p>';
+                calculationResults = { annualSalary: null };
+                updateModalContent();
+                showResultsModal();
                 return;
             }
             
-            // Calculate total block hours from all parsed duties
             const totalBlockHours = rosterData.duties.reduce((sum, duty) => sum + duty.blockHours, 0);
+            const totalDutyHours = rosterData.duties.reduce((sum, duty) => sum + duty.dutyHours, 0);
 
-            // Calculate Productivity Bonus based on the 60-hour threshold
-            let productivityBonus = 0;
-            const bonusThreshold = 60; // As per Appendix B of the EBA
-            if (totalBlockHours > bonusThreshold) {
-                const bonusHours = totalBlockHours - bonusThreshold;
-                const bonusRate = EBA_DATA.ProductivityBonus[finalRank];
-                productivityBonus = bonusHours * bonusRate;
-            }
+            const bonusThreshold = 60;
+            const bonusHours = Math.max(0, totalBlockHours - bonusThreshold);
+            const productivityBonus = bonusHours * (EBA_DATA.ProductivityBonus[finalRank] || 0);
+            
+            const overtimeThreshold = 84;
+            const overtimeHours = Math.max(0, totalDutyHours - overtimeThreshold);
+            const overtimePay = overtimeHours * (EBA_DATA.OvertimeRate[finalRank] || 0);
 
-            // 5. Display the formatted results
             const fortnightlyBasePay = (annualSalary / 365.25) * 14;
+            const totalGrossPay = fortnightlyBasePay + productivityBonus + overtimePay;
 
-            resultsContainer.innerHTML = `
-                <h3>Pay Calculation Results</h3>
-                <p><strong>Rank:</strong> ${finalRank}</p>
-                <p><strong>Home Base:</strong> ${rosterData.homeBase || 'N/A'}</p>
-                <p><strong>Annual Salary:</strong> $${annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                <hr>
-                <p><strong>Estimated Fortnightly Base Pay:</strong> $${fortnightlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                <p><strong>Total Block Hours Detected:</strong> ${totalBlockHours.toFixed(2)}</p>
-                <p><strong>Productivity Bonus (Over 60hrs):</strong> $${productivityBonus.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                <hr>
-                <h4>Estimated Total Fortnightly Gross Pay:</h4>
-                <p style="font-size: 1.5em; font-weight: bold; color: #16a34a;">$${(fortnightlyBasePay + productivityBonus).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-            `;
+            // Store all results in the global variable
+            calculationResults = {
+                finalRank,
+                homeBase: rosterData.homeBase,
+                annualSalary,
+                fortnightlyBasePay,
+                bonusHours,
+                productivityBonus,
+                overtimeHours,
+                overtimePay,
+                totalBlockHours,
+                totalDutyHours,
+                totalGrossPay
+            };
+            
+            // Update and show the modal
+            updateModalContent();
+            showResultsModal();
         }
 
     </script>
