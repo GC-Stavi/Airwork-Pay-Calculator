@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Airwork Pay Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- General Layout & Base Styles --- */
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: linear-gradient(to bottom right, #f0f4f8, #e0e7ee);
+            color: #334155;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- Top Banner --- */
+        .top-banner {
+            width: 100%;
+            background-color: #1e293b; /* Dark blue-gray */
+            padding: 0.8em 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+            z-index: 100;
+            color: #ffffff;
+        }
+
+        .top-banner h1 {
+            font-size: 1.8em;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin: 0;
+            font-weight: 700;
+        }
+
+        /* --- Page Header --- */
+        header {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            margin: 2rem auto 0;
+            padding: 0 20px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        header hr {
+            max-width: 250px;
+            margin: 20px auto 30px auto;
+            border: 0;
+            border-top: 2px solid #cbd5e1;
+        }
+
+        /* --- Main Content Container --- */
+        .container {
+            max-width: 1000px;
+            width: 95%;
+            margin: 1rem auto;
+            background: #ffffff;
+            padding: 2em;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+
+        /* --- Buttons & Controls --- */
+        .top-controls {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            z-index: 110;
+        }
+        
+        button {
+            padding: 0.8em 1.6em;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        
+        button.primary-button {
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            color: #ffffff;
+        }
+        
+        button.primary-button:hover {
+            opacity: 0.9;
+        }
+        
+        .dark-toggle-btn {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        
+        /* --- DARK MODE STYLES --- */
+        body.dark-mode {
+            background: linear-gradient(to bottom right, #1e293b, #0f172a);
+            color: #e2e8f0;
+        }
+
+        body.dark-mode .container {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
+        
+        body.dark-mode .top-banner {
+             background-color: #0f172a;
+        }
+
+        body.dark-mode header p {
+            color: #94a3b8;
+        }
+
+        body.dark-mode header hr {
+            border-top-color: #475569;
+        }
+
+        body.dark-mode .dark-toggle-btn {
+            background: #334155;
+            color: #e2e8f0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Top decorative banner -->
+    <div class="top-banner">
+        <h1>Airwork Pay Calculator</h1>
+    </div>
+
+    <!-- Top right controls, e.g., Dark Mode toggle -->
+    <div class="top-controls">
+        <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
+    </div>
+
+    <!-- Main header with introduction -->
+    <header>
+        <p>A tool to estimate pilot pay based on the Airwork 2017 Enterprise Agreement.</p>
+        <hr>
+    </header>
+
+    <!-- Main content area -->
+    <main class="container">
+        <!-- Content will be added here in the next steps -->
+        <p>Calculator content will go here.</p>
+    </main>
+    
+    <script>
+        // --- DARK MODE LOGIC ---
+        // This function toggles the 'dark-mode' class on the body
+        function toggleDarkMode() {
+            const body = document.body;
+            const btn = document.getElementById('darkModeBtn');
+            const isDark = body.classList.toggle('dark-mode');
+            btn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            // Save the user's preference in localStorage
+            localStorage.setItem('darkMode', isDark ? 'dark' : 'light');
+        }
+
+        // --- ON PAGE LOAD ---
+        // This function checks for a saved preference or system preference for dark mode
+        window.onload = function() {
+            const savedMode = localStorage.getItem('darkMode');
+            // Check if the user's OS is set to dark mode
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            
+            if (savedMode === 'dark' || (!savedMode && prefersDark)) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeBtn').textContent = 'Light Mode';
+            }
+        };
+    </script>
+</body>
+</html>
