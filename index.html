@@ -385,13 +385,24 @@
 
     <main class="container">
         
-        <div class="input-group">
-            <label for="employmentType">Employment Type</label>
-            <select id="employmentType" onchange="toggleMode()">
-                <option value="Permanent">Permanent</option>
-                <option value="Casual">Casual</option>
-            </select>
+        <div class="input-grid">
+            <div class="input-group">
+                <label for="employmentType">Employment Type</label>
+                <select id="employmentType" onchange="toggleMode()">
+                    <option value="Permanent">Permanent</option>
+                    <option value="Casual">Casual</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="payPeriodStart">Pay Period Start</label>
+                <input type="date" id="payPeriodStart">
+            </div>
+             <div class="input-group">
+                <label for="payPeriodEnd">Pay Period End</label>
+                <input type="date" id="payPeriodEnd">
+            </div>
         </div>
+
 
         <div id="permanentInputs">
             <div class="input-grid">
@@ -530,6 +541,10 @@
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
+            // Pre-populate with first payslip period
+            document.getElementById('payPeriodStart').value = '2025-04-28';
+            document.getElementById('payPeriodEnd').value = '2025-05-11';
+
             document.getElementById('initialRosterInput').value = `TimeMode Local time 1 / 2
 Roster
 (01MAY25 - 31MAY25)
@@ -612,10 +627,21 @@ HTL 0000 PER 0635 PER 1710 FO
             }
             return { dutyMap, rosterPeriod };
         }
+        
+        function parseDate(dateStr, monthStr, yearStr) {
+            const day = parseInt(dateStr, 10);
+            const month = MONTHS_MAP[monthStr.toUpperCase()];
+            const year = parseInt(yearStr, 10);
+            if (!isNaN(day) && month !== undefined && !isNaN(year)) {
+                return new Date(Date.UTC(year, month, day));
+            }
+            return null;
+        }
+
 
         function processDayEntries(entries) {
             const firstLineParts = entries[0].trim().split(/\s+/);
-            const dayInfo = { date: firstLineParts[0], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
+            const dayInfo = { date: firstLineParts[0], dayName: firstLineParts[1], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
             let dutyStartTime = null, dutyEndTime = null;
             const groundDutyCodes = ['ADMIN', 'SIM'];
             
@@ -634,6 +660,28 @@ HTL 0000 PER 0635 PER 1710 FO
             dayInfo.signOff = dutyEndTime || '0000';
             return dayInfo;
         }
+        
+        function filterDutiesByPayPeriod(dutyMap, startDate, endDate, rosterYear, rosterMonth) {
+            const filteredMap = new Map();
+            dutyMap.forEach((duty, dateKey) => {
+                const dutyDate = new Date(Date.UTC(rosterYear, MONTHS_MAP[rosterMonth], parseInt(duty.date, 10)));
+                if(dutyDate >= startDate && dutyDate <= endDate) {
+                    filteredMap.set(dateKey, duty);
+                }
+            });
+            // Handle wrap-around for periods like 28APR - 11MAY
+            if(startDate.getUTCMonth() !== endDate.getUTCMonth()) {
+                 dutyMap.forEach((duty, dateKey) => {
+                    const dutyMonth = MONTHS_MAP[rosterMonth === 'MAY' ? 'APR' : rosterMonth]; // Simple assumption for now
+                    const dutyDate = new Date(Date.UTC(rosterYear, dutyMonth, parseInt(duty.date, 10)));
+                     if(dutyDate >= startDate && dutyDate <= endDate) {
+                        filteredMap.set(dateKey, duty);
+                    }
+                });
+            }
+            return filteredMap;
+        }
+
 
         function compareRosters(initialRoster, finalRoster) {
             const changes = [];
@@ -675,16 +723,16 @@ HTL 0000 PER 0635 PER 1710 FO
             const { totalAllowance: mealAndLayoverAllowance } = calculateAllowances(finalRosterData);
             let otherAllowances = 0;
             if (document.getElementById('isRHS').checked) {
-                otherAllowances += EBA_DATA.RHSAllowance / 3;
+                otherAllowances += EBA_DATA.RHSAllowance / 3 / 2; // Monthly, then fortnightly
             }
             if (document.getElementById('isTrainingCaptain').checked) {
-                otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12;
+                otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12 / 2; // Annually -> fortnightly
             }
-            const monthlyBasePay = annualSalary / 12;
-            const superablePay = monthlyBasePay + rosterChangeAllowance + otherAllowances;
+            const fortnightlyBasePay = (annualSalary / 365.25) * 14;
+            const superablePay = fortnightlyBasePay + rosterChangeAllowance + otherAllowances;
             const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
-            const totalGrossPay = monthlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
-            return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
+            const totalGrossPay = fortnightlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
+            return { fortnightlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
         }
 
         function calculateCasualPay(finalRosterData, rank) {
@@ -736,24 +784,24 @@ HTL 0000 PER 0635 PER 1710 FO
                     });
                     changesHtml += '</ul>';
                 } else {
-                    changesHtml += '<p>No pay-relevant changes detected between rosters.</p>';
+                    changesHtml += '<p>No pay-relevant changes detected within this pay period.</p>';
                 }
                 contentDiv.innerHTML = `
                     <h3>Pay Calculation Results (Permanent)</h3>
                     <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                        <p class="label">Pay Period:</p><p>${res.payPeriod.start} to ${res.payPeriod.end}</p>
                         <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div><hr>${changesHtml}<hr>
-                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <h4>Pay Component Breakdown (Fortnightly)</h4>
                     <div class="results-grid">
-                        <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Base Pay:</p><p>$${res.fortnightlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                         <p class="label">Roster Change Allowances:</p><p>$${res.rosterChangeAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                         <p class="label">Meal & Layover Allowances:</p><p>$${res.mealAndLayoverAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                         <p class="label">Other Duty Allowances:</p><p>$${res.otherAllowances.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <div class="total-pay-section">
-                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <h4>Estimated Total Fortnightly Gross Pay:</h4>
                         <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <hr>
@@ -765,15 +813,15 @@ HTL 0000 PER 0635 PER 1710 FO
                     <h3>Pay Calculation Results (Casual)</h3>
                      <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                        <p class="label">Pay Period:</p><p>${res.payPeriod.start} to ${res.payPeriod.end}</p>
                     </div><hr>
-                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <h4>Pay Component Breakdown (Fortnightly)</h4>
                     <div class="results-grid">
                         <p class="label">Flight Pay (${res.totalBlockHours.toFixed(2)} hrs):</p><p>$${res.flightPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                         <p class="label">Ground Duty Pay (${res.groundDutyDays} days):</p><p>$${res.groundPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <div class="total-pay-section">
-                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <h4>Estimated Total Fortnightly Gross Pay:</h4>
                         <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <hr>
@@ -787,6 +835,8 @@ HTL 0000 PER 0635 PER 1710 FO
 
         function runCalculation() {
             const employmentType = document.getElementById('employmentType').value;
+            const payPeriodStart = new Date(document.getElementById('payPeriodStart').value + 'T00:00:00Z');
+            const payPeriodEnd = new Date(document.getElementById('payPeriodEnd').value + 'T23:59:59Z');
             
             if(employmentType === 'Permanent') {
                 let initialRosterText = document.getElementById('initialRosterInput').value;
@@ -800,8 +850,15 @@ HTL 0000 PER 0635 PER 1710 FO
                 const level = document.getElementById('levelSelect').value;
                 const initialRosterData = parseRoster(initialRosterText);
                 const finalRosterData = parseRoster(finalRosterText);
-                const detectedChanges = compareRosters(initialRosterData.dutyMap, finalRosterData.dutyMap);
-                const permanentPay = calculatePermanentPay(finalRosterData, level, rank, detectedChanges);
+
+                const rosterMonthStr = finalRosterData.rosterPeriod.start.substring(2,5);
+                const rosterYear = 2000 + parseInt(finalRosterData.rosterPeriod.start.substring(5,7));
+                
+                const filteredInitialDuties = filterDutiesByPayPeriod(initialRosterData.dutyMap, payPeriodStart, payPeriodEnd, rosterYear, rosterMonthStr);
+                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, payPeriodStart, payPeriodEnd, rosterYear, rosterMonthStr);
+
+                const detectedChanges = compareRosters(filteredInitialDuties, filteredFinalDuties);
+                const permanentPay = calculatePermanentPay({dutyMap: filteredFinalDuties}, level, rank, detectedChanges);
 
                 calculationResults = {
                     mode: 'Permanent',
@@ -809,20 +866,27 @@ HTL 0000 PER 0635 PER 1710 FO
                     annualSalary: EBA_DATA.Permanent[rank]?.[level],
                     ...permanentPay,
                     detectedChanges,
+                    payPeriod: {start: payPeriodStart.toLocaleDateString('en-AU'), end: payPeriodEnd.toLocaleDateString('en-AU')},
                     rosterPeriod: finalRosterData.rosterPeriod
                 };
 
             } else { // Casual
                 const finalRosterText = document.getElementById('finalRosterInput').value;
                 const finalRosterData = parseRoster(finalRosterText);
+                const rosterMonthStr = finalRosterData.rosterPeriod.start.substring(2,5);
+                const rosterYear = 2000 + parseInt(finalRosterData.rosterPeriod.start.substring(5,7));
+
+                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, payPeriodStart, payPeriodEnd, rosterYear, rosterMonthStr);
+
                 const rank = document.getElementById('casualRankSelect').value;
-                const casualPay = calculateCasualPay(finalRosterData, rank);
+                const casualPay = calculateCasualPay({dutyMap: filteredFinalDuties}, rank);
 
                 calculationResults = {
                     mode: 'Casual',
                     finalRank: rank,
                     ...casualPay,
-                     rosterPeriod: finalRosterData.rosterPeriod
+                    payPeriod: {start: payPeriodStart.toLocaleDateString('en-AU'), end: payPeriodEnd.toLocaleDateString('en-AU')},
+                    rosterPeriod: finalRosterData.rosterPeriod
                 };
             }
             
