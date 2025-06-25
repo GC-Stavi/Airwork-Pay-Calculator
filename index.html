@@ -498,7 +498,8 @@
             "MealAllowance": { "Breakfast": 34.88, "Lunch": 39.08, "Dinner": 67.19 },
             "LayoverAllowance": 125.73,
             "RHSAllowance": 1412.50, // Per quarter
-            "TrainingCaptainAllowance": 9800.00 // Per annum
+            "TrainingCaptainAllowance": 9800.00, // Per annum
+            "SuperGuaranteeRate": 0.115 // As of July 2024
         };
 
         // --- UI FUNCTIONS ---
@@ -674,23 +675,21 @@ HTL 0000 PER 0635 PER 1710 FO
             const { totalAllowance: mealAndLayoverAllowance } = calculateAllowances(finalRosterData);
             let otherAllowances = 0;
             if (document.getElementById('isRHS').checked) {
-                otherAllowances += EBA_DATA.RHSAllowance / 3; // Quarterly allowance -> monthly
+                otherAllowances += EBA_DATA.RHSAllowance / 3;
             }
             if (document.getElementById('isTrainingCaptain').checked) {
                 otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12;
             }
             const monthlyBasePay = annualSalary / 12;
+            const superablePay = monthlyBasePay + rosterChangeAllowance + otherAllowances;
+            const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
             const totalGrossPay = monthlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
-            return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, totalGrossPay };
+            return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
         }
 
         function calculateCasualPay(finalRosterData, rank) {
             const casualRates = EBA_DATA.Casual[rank];
-            let flightPay = 0;
-            let groundPay = 0;
-            let totalBlockHours = 0;
-            let groundDutyDays = 0;
-
+            let flightPay = 0, groundPay = 0, totalBlockHours = 0, groundDutyDays = 0;
             finalRosterData.dutyMap.forEach(duty => {
                 if(duty.isGroundDuty) {
                     groundDutyDays++;
@@ -699,10 +698,10 @@ HTL 0000 PER 0635 PER 1710 FO
                      totalBlockHours += duty.blockHours;
                 }
             });
-
             flightPay = totalBlockHours * casualRates.Standard;
             const totalGrossPay = flightPay + groundPay;
-            return { totalBlockHours, groundDutyDays, totalGrossPay, groundPay, flightPay };
+            const superContribution = totalGrossPay * EBA_DATA.SuperGuaranteeRate;
+            return { totalBlockHours, groundDutyDays, totalGrossPay, groundPay, flightPay, superContribution };
         }
 
         function calculateAllowances(finalRosterData) {
@@ -756,6 +755,10 @@ HTL 0000 PER 0635 PER 1710 FO
                     <div class="total-pay-section">
                         <h4>Estimated Total Monthly Gross Pay:</h4>
                         <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <hr>
+                    <div class="results-grid">
+                         <p class="label">Superannuation Contribution:</p><p>$${res.superContribution.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>`;
             } else if (res.mode === 'Casual') {
                  contentDiv.innerHTML = `
@@ -772,6 +775,10 @@ HTL 0000 PER 0635 PER 1710 FO
                     <div class="total-pay-section">
                         <h4>Estimated Total Monthly Gross Pay:</h4>
                         <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <hr>
+                    <div class="results-grid">
+                         <p class="label">Superannuation Contribution:</p><p>$${res.superContribution.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>`;
             } else {
                  contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
@@ -825,4 +832,4 @@ HTL 0000 PER 0635 PER 1710 FO
 
     </script>
 </body>
-</ht
+</html>
