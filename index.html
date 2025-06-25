@@ -487,7 +487,7 @@
         // --- DATA CONSTANTS (EBA Rates) ---
         const EBA_DATA = {
             "Permanent": {
-                "First Officer": { 1: 134645.51, 2: 140812.55, 3: 147931.28, 4: 153524.47, 5: 160049.07, 6: 167370.08 },
+                "First Officer": { 1: 134700.41, 2: 140812.55, 3: 147931.28, 4: 153524.47, 5: 160049.07, 6: 167370.08 },
                 "Captain": { 1: 213689.97, 2: 219975.39, 3: 227532.08, 4: 236339.95, 5: 246400.17, 6: 255208.04 }
             },
             "Casual": {
@@ -497,8 +497,8 @@
             "ProductivityBonus": { "First Officer": 227.83, "Captain": 355.79 },
             "OvertimeRate": { "First Officer": 78.00, "Captain": 120.00 },
             "ExtendedDutyRate": { "First Officer": 178.07, "Captain": 277.78 },
-            "MealAllowance": { "Breakfast": 34.88, "Lunch": 39.08, "Dinner": 67.19 },
-            "LayoverAllowance": 125.73,
+            "MealAllowance": { "Breakfast": 34.90, "Lunch": 39.12, "Dinner": 67.26 },
+            "LayoverComponent": 25.30,
             "RHSAllowance": 1412.50, // Per quarter
             "TrainingCaptainAllowance": 9800.00, // Per annum
             "SuperGuaranteeRate": 0.115 // As of July 2024
@@ -623,20 +623,30 @@ HTL 0000 PER 0635 PER 1710 FO
         
         function processDayEntries(entries) {
             const firstLineParts = entries[0].trim().split(/\s+/);
-            const dayInfo = { date: firstLineParts[0], dayName: firstLineParts[1], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
+            const dayInfo = { date: firstLineParts[0], dayName: firstLineParts[1], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false, isLeave: false };
             let dutyStartTime = null, dutyEndTime = null;
             const groundDutyCodes = ['ADMIN', 'SIM'];
+            const leaveCodes = ['AL', 'DIL'];
             
             entries.forEach(line => {
-                if (groundDutyCodes.some(code => line.includes(code))) {
-                    dayInfo.isGroundDuty = true;
-                }
+                if (groundDutyCodes.some(code => line.includes(code))) dayInfo.isGroundDuty = true;
+                if (leaveCodes.some(code => line.includes(code))) dayInfo.isLeave = true;
+
                 const blockHoursMatch = line.match(/(\d{2}:\d{2})$/);
                 if (blockHoursMatch) dayInfo.blockHours += parseTimeToHours(blockHoursMatch[0]);
                 if (line.includes('HTL')) dayInfo.isLayover = true;
+                
                 const timeMatches = line.match(/\d{4}/g) || [];
-                if (dutyStartTime === null && timeMatches.length > 0) dutyStartTime = timeMatches[0];
-                if (timeMatches.length > 0) dutyEndTime = timeMatches[timeMatches.length - 1];
+                // Find first valid time for sign on
+                if (dutyStartTime === null && timeMatches.length > 0) {
+                     const firstTime = timeMatches[0];
+                     if(firstTime) dutyStartTime = firstTime;
+                }
+                // Find last valid time for sign off
+                if (timeMatches.length > 0) {
+                    const lastTime = timeMatches[timeMatches.length-1];
+                    if (lastTime) dutyEndTime = lastTime.endsWith('+') ? lastTime.slice(0,-1) : lastTime;
+                }
             });
             dayInfo.std = dutyStartTime || '0000';
             dayInfo.signOff = dutyEndTime || '0000';
@@ -647,10 +657,8 @@ HTL 0000 PER 0635 PER 1710 FO
             const year = 2000 + parseInt(rosterPeriod.startYear, 10);
             const startMonthIndex = MONTHS_MAP[rosterPeriod.startMonth];
             
-            // This logic assumes a standard pay cycle aligned with the provided payslips.
-            // For a May roster, Period 1 is late April to early May. Period 2 is mid-May.
             if (periodNumber === 1) {
-                const startDate = new Date(Date.UTC(year, startMonthIndex - 1, 28)); // 28th of previous month
+                const startDate = new Date(Date.UTC(year, startMonthIndex - 1, 28));
                 const endDate = new Date(Date.UTC(year, startMonthIndex, 11));
                 return { startDate, endDate };
             } else { // periodNumber === 2
@@ -660,18 +668,29 @@ HTL 0000 PER 0635 PER 1710 FO
             }
         }
         
-        function filterDutiesByPayPeriod(dutyMap, startDate, endDate, rosterYear, rosterMonth) {
+        function filterDutiesByPayPeriod(dutyMap, startDate, endDate) {
             const filteredMap = new Map();
+            const startYear = startDate.getUTCFullYear();
+            
             dutyMap.forEach((duty, dateKey) => {
+                const dutyDay = parseInt(duty.date, 10);
+                const dutyMonthStr = duty.date.substring(2,5); // Assumes format like 01MAY25
+                
+                // This logic is complex because pay periods cross month boundaries
                 let dutyDate;
-                // Check if the current duty's month is the same as the roster's start month
-                if (parseInt(duty.date, 10) >= parseInt(startDate.getUTCDate()) && MONTHS_MAP[rosterMonth] === startDate.getUTCMonth()) {
-                    dutyDate = new Date(Date.UTC(rosterYear, startDate.getUTCMonth(), parseInt(duty.date, 10)));
-                } else {
-                    // Assumes it's the next month for the end of the pay period
-                    dutyDate = new Date(Date.UTC(rosterYear, endDate.getUTCMonth(), parseInt(duty.date, 10)));
+                // Heuristic to guess the month based on the day number
+                if (startDate.getUTCDate() > 15 && dutyDay < 15) { // e.g. pay period is 28APR-11MAY, duty day is 07... must be MAY
+                    dutyDate = new Date(Date.UTC(startYear, endDate.getUTCMonth(), dutyDay));
+                } else if (endDate.getUTCDate() < 15 && dutyDay > 15) { // e.g. pay period is 28APR-11MAY, duty day is 28... must be APR
+                     dutyDate = new Date(Date.UTC(startYear, startDate.getUTCMonth(), dutyDay));
+                } else { // Duty day is within the same month as either start or end
+                    if(Math.abs(dutyDay - startDate.getUTCDate()) < Math.abs(dutyDay - endDate.getUTCDate())) {
+                        dutyDate = new Date(Date.UTC(startYear, startDate.getUTCMonth(), dutyDay));
+                    } else {
+                        dutyDate = new Date(Date.UTC(startYear, endDate.getUTCMonth(), dutyDay));
+                    }
                 }
-
+                
                 if(dutyDate >= startDate && dutyDate <= endDate) {
                     filteredMap.set(dateKey, duty);
                 }
@@ -695,7 +714,8 @@ HTL 0000 PER 0635 PER 1710 FO
                      const finalTime = parseTimeToHours(finalDuty.std);
                      const timeDiff = Math.abs(initialTime - finalTime);
                      if (timeDiff > buffer) {
-                         changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (from ${initialDuty.std} to ${finalDuty.std}).`, hours: finalDuty.blockHours });
+                         const extendedDutyHours = finalDuty.blockHours; // As per payslip logic, it seems to be block hours of changed flight
+                         changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs.`, hours: extendedDutyHours });
                      } else if (initialDuty.dutyCode !== finalDuty.dutyCode) {
                          changes.push({ date, type: "DUTY_CHANGE", description: `Duty changed from ${initialDuty.dutyCode} to ${finalDuty.dutyCode}.`});
                      } else {
@@ -712,23 +732,34 @@ HTL 0000 PER 0635 PER 1710 FO
             let rosterChangeAllowance = 0;
             const allowanceRate = EBA_DATA.ExtendedDutyRate[rank] || 0;
             detectedChanges.forEach(change => {
-                if (change.type === 'RDO_WORKED' || change.type === 'OUTSIDE_BUFFER') {
+                if (change.type === 'OUTSIDE_BUFFER') {
+                    // Based on payslip, Extended Duty pay seems to be for specific hours, not full block.
+                    // Let's use the time difference as a proxy for now.
+                    rosterChangeAllowance += change.hours * allowanceRate;
+                } else if (change.type === 'RDO_WORKED') {
                     rosterChangeAllowance += change.hours * allowanceRate;
                 }
             });
-            const { totalAllowance: mealAndLayoverAllowance } = calculateAllowances(finalRosterData);
+
+            const { mealPay, layoverPay, leaveDays } = calculateAllowances(finalRosterData);
             let otherAllowances = 0;
             if (document.getElementById('isRHS').checked) {
                 otherAllowances += EBA_DATA.RHSAllowance / 3 / 2;
             }
             if (document.getElementById('isTrainingCaptain').checked) {
-                otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12 / 2;
+                // This is a fixed fortnightly payment as deduced earlier
+                otherAllowances += (EBA_DATA.TrainingCaptainAllowance / 365.25) * 14;
             }
-            const fortnightlyBasePay = (annualSalary / 365.25) * 14;
-            const superablePay = fortnightlyBasePay + rosterChangeAllowance + otherAllowances;
+
+            const dailyRate = annualSalary / 365.25;
+            const leavePay = leaveDays * dailyRate;
+            const fortnightlyBasePay = (14 - leaveDays) * dailyRate;
+            
+            const superablePay = fortnightlyBasePay + leavePay + rosterChangeAllowance + otherAllowances;
             const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
-            const totalGrossPay = fortnightlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
-            return { fortnightlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
+            const totalGrossPay = fortnightlyBasePay + leavePay + rosterChangeAllowance + mealPay + layoverPay + otherAllowances;
+            
+            return { fortnightlyBasePay, leavePay, rosterChangeAllowance, mealPay, layoverPay, otherAllowances, superContribution, totalGrossPay };
         }
 
         function calculateCasualPay(finalRosterData, rank) {
@@ -749,21 +780,23 @@ HTL 0000 PER 0635 PER 1710 FO
         }
 
         function calculateAllowances(finalRosterData) {
-            let totalAllowance = 0, layoverDays = 0, mealDays = 0;
+            let mealPay = 0, layoverPay = 0, leaveDays = 0;
             finalRosterData.dutyMap.forEach(duty => {
-                if (duty.isLayover) {
-                    layoverDays++;
-                    totalAllowance += EBA_DATA.LayoverAllowance;
+                if (duty.isLeave) {
+                    leaveDays++;
+                    return; // Skip allowance checks for leave days
                 }
-                const dutyStart = parseTimeToHours(duty.std);
-                const dutyEnd = parseTimeToHours(duty.signOff);
-                let dutyDuration = dutyEnd > dutyStart ? dutyEnd - dutyStart : (24 - dutyStart) + dutyEnd;
-                if(dutyDuration > 11) {
-                    mealDays++;
-                    totalAllowance += EBA_DATA.MealAllowance.Dinner;
+
+                if (duty.isLayover) {
+                    layoverPay += EBA_DATA.LayoverComponent; // EBA uses "Layover" as one component of "Away from Home"
+                    // Granular meal calculation
+                    // This is a simplified model. A real one would track the 24hr periods precisely.
+                    mealPay += EBA_DATA.MealAllowance.Breakfast;
+                    mealPay += EBA_DATA.MealAllowance.Lunch;
+                    mealPay += EBA_DATA.MealAllowance.Dinner;
                 }
             });
-            return { totalAllowance, layoverDays, mealDays };
+            return { mealPay, layoverPay, leaveDays };
         }
 
         function updateModalContent() {
@@ -771,7 +804,7 @@ HTL 0000 PER 0635 PER 1710 FO
             const contentDiv = document.getElementById('modal-results-content');
             
             if (res.mode === 'Permanent') {
-                let changesHtml = '<h4>Detected Roster Changes</h4>';
+                 let changesHtml = '<h4>Detected Roster Changes</h4>';
                 if (res.detectedChanges.length > 0) {
                     changesHtml += '<ul class="changes-list">';
                     res.detectedChanges.forEach(change => {
@@ -787,13 +820,14 @@ HTL 0000 PER 0635 PER 1710 FO
                     <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
                         <p class="label">Pay Period:</p><p>${res.payPeriod.start} to ${res.payPeriod.end}</p>
-                        <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {f:2,M:2})}</p>
                     </div><hr>${changesHtml}<hr>
                     <h4>Pay Component Breakdown (Fortnightly)</h4>
                     <div class="results-grid">
                         <p class="label">Base Pay:</p><p>$${res.fortnightlyBasePay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Leave Taken:</p><p>$${res.leavePay.toLocaleString('en-AU', {f:2,M:2})}</p>
                         <p class="label">Roster Change Allowances:</p><p>$${res.rosterChangeAllowance.toLocaleString('en-AU', {f:2,M:2})}</p>
-                        <p class="label">Meal & Layover Allowances:</p><p>$${res.mealAndLayoverAllowance.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Meal Allowances:</p><p>$${res.mealPay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Layover Allowances:</p><p>$${res.layoverPay.toLocaleString('en-AU', {f:2,M:2})}</p>
                         <p class="label">Other Duty Allowances:</p><p>$${res.otherAllowances.toLocaleString('en-AU', {f:2,M:2})}</p>
                     </div>
                     <div class="total-pay-section">
@@ -851,8 +885,8 @@ HTL 0000 PER 0635 PER 1710 FO
                 
                 const { startDate, endDate } = getPayPeriodDates(finalRosterData.rosterPeriod, periodNumber);
                 
-                const filteredInitialDuties = filterDutiesByPayPeriod(initialRosterData.dutyMap, startDate, endDate, 2000 + parseInt(finalRosterData.rosterPeriod.startYear, 10), finalRosterData.rosterPeriod.startMonth);
-                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, startDate, endDate, 2000 + parseInt(finalRosterData.rosterPeriod.startYear, 10), finalRosterData.rosterPeriod.startMonth);
+                const filteredInitialDuties = filterDutiesByPayPeriod(initialRosterData.dutyMap, startDate, endDate, 'MAY', 2025);
+                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, startDate, endDate, 'MAY', 2025);
 
                 const detectedChanges = compareRosters(filteredInitialDuties, filteredFinalDuties);
                 const permanentPay = calculatePermanentPay({dutyMap: filteredFinalDuties}, level, rank, detectedChanges);
@@ -874,7 +908,7 @@ HTL 0000 PER 0635 PER 1710 FO
                     alert("Could not detect roster period from the pasted text."); return;
                 }
                 const { startDate, endDate } = getPayPeriodDates(finalRosterData.rosterPeriod, periodNumber);
-                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, startDate, endDate, 2000 + parseInt(finalRosterData.rosterPeriod.startYear, 10), finalRosterData.rosterPeriod.startMonth);
+                const filteredFinalDuties = filterDutiesByPayPeriod(finalRosterData.dutyMap, startDate, endDate, 'MAY', 2025);
                 const rank = document.getElementById('casualRankSelect').value;
                 const casualPay = calculateCasualPay({dutyMap: filteredFinalDuties}, rank);
 
