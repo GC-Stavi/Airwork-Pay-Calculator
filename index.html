@@ -92,6 +92,14 @@
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
+        
+        .options-grid {
+             display: grid;
+             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+             gap: 1rem;
+             margin-bottom: 1.5rem;
+        }
+
 
         .input-group label {
             display: block;
@@ -107,6 +115,7 @@
             border-radius: 8px;
             font-size: 1em;
             background-color: #f8fafc;
+            box-sizing: border-box;
         }
 
         textarea {
@@ -118,10 +127,6 @@
             border-radius: 8px;
             resize: vertical;
             font-size: 14px;
-        }
-
-        .options-grid {
-            margin-bottom: 1.5rem;
         }
 
         .checkbox-group label {
@@ -383,12 +388,21 @@
 
     <main class="container">
         
-        <div class="input-group">
-            <label for="employmentType">Employment Type</label>
-            <select id="employmentType" onchange="toggleMode()">
-                <option value="Permanent">Permanent</option>
-                <option value="Casual">Casual</option>
-            </select>
+        <div class="input-grid">
+             <div class="input-group">
+                <label for="employmentType">Employment Type</label>
+                <select id="employmentType" onchange="toggleMode()">
+                    <option value="Permanent">Permanent</option>
+                    <option value="Casual">Casual</option>
+                </select>
+            </div>
+             <div class="input-group">
+                <label for="payPeriod">Pay Period</label>
+                <select id="payPeriod">
+                    <option value="14">Fortnightly</option>
+                    <option value="28">Monthly</option>
+                </select>
+            </div>
         </div>
 
         <div id="permanentInputs">
@@ -422,6 +436,10 @@
                 <div class="checkbox-group">
                     <label><input type="checkbox" id="isFlightExaminer"> Flight Examiner Captain</label>
                 </div>
+                <div class="input-group">
+                    <label for="assessmentDays">Days Undergoing Assessment/Training</label>
+                    <input type="number" id="assessmentDays" value="0" min="0">
+                </div>
             </div>
         </div>
         
@@ -434,7 +452,6 @@
                 </select>
             </div>
         </div>
-
 
         <div class="roster-inputs" id="rosterInputsContainer">
             <div class="input-group" id="initialRosterGroup">
@@ -488,17 +505,18 @@
                 "Captain": { 1: 213689.97, 2: 219975.39, 3: 227532.08, 4: 236339.95, 5: 246400.17, 6: 255208.04 }
             },
             "Casual": {
-                "First Officer": { "Standard": 241.16, "GroundDuty": 470.00 }, // Assuming ground duty rate wasn't in the table and remains from EBA
-                "Captain": { "Standard": 370.99, "GroundDuty": 620.00, "Training": 392.16, "Checking": 421.08 } // Assuming ground duty rate wasn't in the table and remains from EBA
+                "First Officer": { "Standard": 241.16, "GroundDuty": 470.00 },
+                "Captain": { "Standard": 370.99, "GroundDuty": 620.00, "Training": 392.16, "Checking": 421.08 }
             },
             "ProductivityBonus": { "First Officer": 227.83, "Captain": 355.79 },
-            "RDO_WorkRate": { "First Officer": 178.07, "Captain": 277.78 }, // From original EBA Appendix B
-            "ExtendedDutyRate": { "First Officer": 178.07, "Captain": 277.78 }, // From original EBA Appendix B
+            "RDO_WorkRate": { "First Officer": 178.07, "Captain": 277.78 },
+            "ExtendedDutyRate": { "First Officer": 178.07, "Captain": 277.78 },
             "MealAllowance": { "Breakfast": 34.88, "Lunch": 39.08, "Dinner": 67.19 },
-            "AwayFromHomeAllowance": 166.43, // Layover allowance from your table
-            "RHSAllowance": 1412.50, // Per quarter - This was missing from the table, using EBA value
+            "AwayFromHomeAllowance": 166.43,
+            "RHSAllowance": 1412.50, // Per quarter
             "TrainingCaptainAllowance": 12324.93, // Per annum
             "FlightExaminerCaptainAllowance": 24208.49, // Per annum
+            "AssessmentAllowance": 376.92, // Daily allowance for FOs under assessment
             "SuperGuaranteeRate": 0.115 // As of July 2024
         };
 
@@ -530,35 +548,65 @@
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
-            // Sample data for easy testing
-            document.getElementById('initialRosterInput').value = `TimeMode Local time 1 / 2
+            // Sample data for easy testing - from the provided files
+            document.getElementById('initialRosterInput').value = `TimeMode Local time
 Roster
-(01MAY25 - 31MAY25)
+(01MAY25-31MAY25)
 Kendell, Guy 0463AU BNE FO/73F
-17APR25 00:36 0463AU
-Date Des. Code LE CI Dep STD Arr STA CO BLH
-01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
-02 Fri DIL 0000 BNE 0000 BNE 2359 FO
-07 Wed PAX 0800 BNE 0900 MEL 1130 1200 FO
-HTL 0000 MEL 1200 MEL 0250+ FO
-08 Thu QF7282 F 0250 MEL 0350 PER 0605 0635 FO 04:15
-Crew: CP: Cowled, Clayton, FO: Kendell, Guy
-HTL 0000 PER 0635 PER 1710 FO
-17 Sat RDO 0000 BNE 0000 BNE 2359 FO`;
-            document.getElementById('finalRosterInput').value = `TimeMode Local time 1 / 2
+17APR25 00:36
+Date Des. Code CI Dep STD Arr STA CO AC WA Func Rank BLH
+12 Mon 0800 PAX BNE MEL 0900 1125 1155 FO
+HTL MEL 1155 MEL 0250+ FO
+13 Tue RCA 0250 QF7282 F MEL PER 0350 0605 0635 73P FO 04:15
+Crew: CPFE(): Hanna, Christopher, FO(RCA): Kendell, Guy
+HTL PER 0640 PER 1710 FO
+RCA 1710 QF7281 F PER MEL 1810 2340 0010+ 73P FO 03:30
+14 Wed HTL MEL MEL 0010 1325 FO
+1325 PAX MEL BNE 1425 1640 1710 FO
+15 Thu ADMIN BNE BNE 0900 1700 1700 FO
+16 Fri ADMIN BNE BNE 0900 1700 1700 FO
+17 Sat RDO BNE BNE 0000 2359 FO
+18 Sun RDO BNE BNE 0000 2359 FO
+19 Mon ADMIN BNE BNE 0900 1700 1700. FO
+20 Tue 0800 PAX BNE MEL 0900 1125 1155 FO
+HTL MEL MEL 1155 2340 FO
+2340 QF7286 F MEL LST 0040 0140 73P FO 01:00
+21 Wed F QF7287 LST MEL 0210 0310 0340 73P FO 01:00
+HTL MEL 0340 MEL 0800+ FO
+22 Thu 1 PREF MEL MEL 0800 1600 FO
+PAX ACKD MEL 1830 BNE 2045 2115 FO
+23 Fri ADMIN BNE BNE 0900 1700 1700 FO
+24 Sat RDO BNE BNE 0000 2359 FO
+25 Sun RDO BNE BNE 0000 2359 FO`;
+            document.getElementById('finalRosterInput').value = `TimeMode Local time
 Roster
-(01MAY25 - 31MAY25)
+(01MAY25-31MAY25)
 Kendell, Guy 0463AU BNE FO/73F
-25JUN25 00:53 0463AU
-Date Des. Code LE CI Dep STD Arr STA CO BLH
-01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
-02 Fri DIL 0000 BNE 0000 BNE 2359 FO
-07 Wed PAX 0905 BNE 1005 MEL 1230 1300 FO
-HTL 0000 MEL 1200 MEL 0250+ FO
-08 Thu QF7282 F 0250 MEL 0350 PER 0605 0635 FO 04:15
-Crew: CP: Cowled, Clayton, FO: Kendell, Guy
-HTL 0000 PER 0635 PER 1710 FO
-17 Sat QF7281 F 1710 PER 1810 MEL 2340 73P FO 03:57`;
+25JUN25 00:53
+Date Des. Code E Dep STD Arr CI STA CO AC WA Rank BLH Func
+12 Mon PAX BNE 0800 MEL 1125 1155 FO
+HTL MEL 1155 MEL 0250+ FO
+13 Tue RCA QF7282 F 0250 MEL 0350 PER 0605 0635 73P FO 04:13
+Crew: CPFE(): Hanna, Christopher, FO(RCA Y,X): Kendell, Guy
+HTL PER 0640 PER 1710 FO
+RCA QF7281 F 1710 PER 1810 MEL 2340 2344 73P FO 03:33
+14 Wed HTL MEL 0010 MEL 2340 FO
+LST 2340 MEL 0040 QF7286 F 0140 73P FO 01:12
+15 Thu F QF7287 LST MEL 0210 0310 0335 73P 00:53 FO
+HTL MEL 0310 MEL 0600 FO
+PAX MEL 0600 BNE 0815 FO
+17 Sat PAX 0905 BNE 1105 SIN 1725 1825 FO
+HTL SIN 1825 SIN 0550+ FO
+18 Sun XSP SIN 0550 CAR 0650 FO
+AWK990 T 0700 XSP 0800 XSP 0930 73P 01:43 FO
+AWK992 F XSP PER 1045 1610 1846 73P 06:02 FO
+HTL PER 1846 PER 1000+ FO
+20 Tue AWK992 F 1000 PER 1100 MEL 1630 1801 73P 03:46 FO
+HTL MEL 1718 MEL 0800+ FO
+22 Thu 1 PREF MEL 0800 MEL 1600 FO
+PAX ACKD MEL 1830 BNE 2045 2115 FO
+24 Sat RDO BNE 0000 BNE 2359 FO
+25 Sun RDO BNE 0000 BNE 2359 FO`;
             
             document.getElementById('resultsModal').addEventListener('click', function(event) {
                 if (event.target === this) { hideResultsModal(); }
@@ -572,24 +620,10 @@ HTL 0000 PER 0635 PER 1710 FO
             if (cleanedTime.length < 3) return 0;
             const hours = parseInt(cleanedTime.slice(0, -2), 10);
             const minutes = parseInt(cleanedTime.slice(-2), 10);
+            if (isNaN(hours) || isNaN(minutes)) return 0;
             return hours + (minutes / 60);
         }
         
-        const MONTHS_MAP = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11 };
-
-        function getPublicationDate(rosterText) {
-            const match = rosterText.match(/(\d{2})([A-Z]{3})(\d{2})\s+(\d{2}:\d{2})/);
-            if (!match) return null;
-            const day = parseInt(match[1], 10);
-            const month = MONTHS_MAP[match[2]];
-            const year = 2000 + parseInt(match[3], 10);
-            const timeParts = match[4].split(':');
-            const hours = parseInt(timeParts[0], 10);
-            const minutes = parseInt(timeParts[1], 10);
-            if (isNaN(day) || month === undefined || isNaN(year) || isNaN(hours) || isNaN(minutes)) return null;
-            return new Date(year, month, day, hours, minutes);
-        }
-
         function parseRoster(rosterText) {
             const dutyMap = new Map();
             const lines = rosterText.trim().split('\n');
@@ -606,7 +640,9 @@ HTL 0000 PER 0635 PER 1710 FO
                         dutyMap.set(date, processDayEntries(currentDayEntries));
                     }
                     currentDayEntries = [line];
-                } else { currentDayEntries.push(line); }
+                } else if (currentDayEntries.length > 0) { 
+                    currentDayEntries.push(line); 
+                }
             }
             if (currentDayEntries.length > 0) {
                 const date = currentDayEntries[0].trim().split(/\s+/)[0];
@@ -617,21 +653,32 @@ HTL 0000 PER 0635 PER 1710 FO
 
         function processDayEntries(entries) {
             const firstLineParts = entries[0].trim().split(/\s+/);
-            const dayInfo = { date: firstLineParts[0], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
+            const dayInfo = { 
+                date: firstLineParts[0], 
+                dutyCode: firstLineParts[2] || 'UNKNOWN', 
+                std: '0000', 
+                signOff: '0000', 
+                blockHours: 0, 
+                isLayover: false, 
+                isGroundDuty: false 
+            };
             let dutyStartTime = null, dutyEndTime = null;
-            const groundDutyCodes = ['ADMIN', 'SIM'];
+            const groundDutyCodes = ['ADMIN', 'SIM', 'FETC', 'PREF'];
             
             entries.forEach(line => {
                 if (groundDutyCodes.some(code => line.includes(code))) {
                     dayInfo.isGroundDuty = true;
                 }
                 const blockHoursMatch = line.match(/(\d{1,2}:\d{2})$/);
-                if (blockHoursMatch) dayInfo.blockHours += parseTimeToHours(blockHoursMatch[0]);
-                if (line.includes('HTL')) dayInfo.isLayover = true;
+                if (blockHoursMatch) {
+                    dayInfo.blockHours += parseTimeToHours(blockHoursMatch[0]);
+                }
+                if (line.includes('HTL')) {
+                    dayInfo.isLayover = true;
+                }
 
                 const timeMatches = line.match(/\b\d{4}\b/g) || [];
-                // Find sign-on and sign-off times
-                if (timeMatches.length >= 2) {
+                if (timeMatches.length > 0) {
                      dutyStartTime = dutyStartTime || timeMatches[0];
                      dutyEndTime = timeMatches[timeMatches.length - 1];
                 }
@@ -653,17 +700,16 @@ HTL 0000 PER 0635 PER 1710 FO
                 }
 
                 if (initialDuty.dutyCode === 'RDO' && finalDuty.dutyCode !== 'RDO') {
-                    // Min 3 hours block pay, or 8 hours for non-flying duty on RDO
-                    const hours = finalDuty.blockHours > 0 ? Math.max(3, finalDuty.blockHours) : 8;
-                    changes.push({ date, type: "RDO_WORKED", description: `RDO changed to ${finalDuty.dutyCode}.`, hours: hours });
+                    const subType = finalDuty.blockHours > 0 ? 'flying' : 'non-flying';
+                    const hours = subType === 'flying' ? Math.max(3, finalDuty.blockHours) : 8;
+                    changes.push({ date, type: "RDO_WORKED", subType: subType, description: `RDO changed to ${finalDuty.dutyCode}.`, hours: hours });
                 } else if (initialDuty.dutyCode !== 'RDO' && (initialDuty.dutyCode !== finalDuty.dutyCode || initialDuty.std !== finalDuty.std)) {
                      const initialTime = parseTimeToHours(initialDuty.std);
                      const finalTime = parseTimeToHours(finalDuty.std);
                      const timeDiff = Math.abs(initialTime - finalTime);
                      if (timeDiff > buffer) {
-                         changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (from ${initialDuty.std} to ${finalDuty.std}).`, hours: finalDuty.blockHours });
-                     } else if (initialDuty.dutyCode !== finalDuty.dutyCode) {
-                         changes.push({ date, type: "DUTY_CHANGE", description: `Duty changed from ${initialDuty.dutyCode} to ${finalDuty.dutyCode}.`});
+                        const hourDifference = Math.max(0, finalDuty.blockHours - initialDuty.blockHours);
+                        changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty changed outside buffer (Net change: ${hourDifference.toFixed(2)} hrs)`, hours: hourDifference });
                      }
                 }
             });
@@ -677,9 +723,14 @@ HTL 0000 PER 0635 PER 1710 FO
             let rosterChangeAllowance = 0;
             const rdoRate = EBA_DATA.RDO_WorkRate[rank] || 0;
             const extendedRate = EBA_DATA.ExtendedDutyRate[rank] || 0;
+            
             detectedChanges.forEach(change => {
                 if (change.type === 'RDO_WORKED') {
-                    rosterChangeAllowance += change.hours * rdoRate;
+                    if (change.subType === 'flying') {
+                        rosterChangeAllowance += change.hours * rdoRate;
+                    } else { // non-flying/positioning
+                        rosterChangeAllowance += (annualSalary / 260); // One day's pay
+                    }
                 } else if (change.type === 'OUTSIDE_BUFFER') {
                     rosterChangeAllowance += change.hours * extendedRate;
                 }
@@ -688,31 +739,39 @@ HTL 0000 PER 0635 PER 1710 FO
             const { totalAllowance: mealAndLayoverAllowance } = calculateAllowances(finalRosterData);
 
             let otherAllowances = 0;
+            const payPeriodDays = parseInt(document.getElementById('payPeriod').value, 10);
+            const periodsPerYear = 365.25 / payPeriodDays;
+
             if (document.getElementById('isRHS').checked) {
-                otherAllowances += EBA_DATA.RHSAllowance / 3; // Monthly portion
+                otherAllowances += EBA_DATA.RHSAllowance / (periodsPerYear / 4); 
             }
             if (document.getElementById('isTrainingCaptain').checked) {
-                otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12; // Monthly portion
+                otherAllowances += EBA_DATA.TrainingCaptainAllowance / periodsPerYear;
             }
             if (document.getElementById('isFlightExaminer').checked) {
-                otherAllowances += EBA_DATA.FlightExaminerCaptainAllowance / 12; // Monthly portion
+                otherAllowances += EBA_DATA.FlightExaminerCaptainAllowance / periodsPerYear;
+            }
+
+            const assessmentDays = parseInt(document.getElementById('assessmentDays').value, 10);
+            if (assessmentDays > 0) {
+                 otherAllowances += assessmentDays * EBA_DATA.AssessmentAllowance;
             }
             
-            // Productivity Bonus Calculation
             let totalBlockHours = 0;
             finalRosterData.dutyMap.forEach(duty => totalBlockHours += duty.blockHours);
             let productivityBonus = 0;
-            if (totalBlockHours > 60) {
+            // Productivity bonus is monthly, so only calculate if pay period is monthly
+            if (payPeriodDays > 27 && totalBlockHours > 60) {
                 const bonusHours = totalBlockHours - 60;
                 productivityBonus = bonusHours * EBA_DATA.ProductivityBonus[rank];
             }
 
-            const monthlyBasePay = annualSalary / 12;
-            const superablePay = monthlyBasePay + rosterChangeAllowance + otherAllowances + productivityBonus;
+            const basePay = annualSalary / periodsPerYear;
+            const superablePay = basePay + rosterChangeAllowance + otherAllowances + productivityBonus;
             const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
-            const totalGrossPay = monthlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances + productivityBonus;
+            const totalGrossPay = basePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances + productivityBonus;
             
-            return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, productivityBonus, superContribution, totalGrossPay, totalBlockHours };
+            return { basePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, productivityBonus, superContribution, totalGrossPay, totalBlockHours };
         }
 
         function calculateCasualPay(finalRosterData, rank) {
@@ -723,20 +782,20 @@ HTL 0000 PER 0635 PER 1710 FO
                     groundDutyDays++;
                     groundPay += casualRates.GroundDuty;
                 } else if(duty.blockHours > 0) {
-                     totalBlockHours += Math.max(3, duty.blockHours); // Min 3 hour payment per duty
+                     const paidHours = Math.max(3, duty.blockHours); // Min 3 hour payment per duty
+                     flightPay += paidHours * casualRates.Standard;
+                     totalBlockHours += duty.blockHours;
                 }
             });
-            flightPay = totalBlockHours * casualRates.Standard;
             const totalGrossPay = flightPay + groundPay;
             const superContribution = totalGrossPay * EBA_DATA.SuperGuaranteeRate;
             return { totalBlockHours, groundDutyDays, totalGrossPay, groundPay, flightPay, superContribution };
         }
 
         function calculateAllowances(finalRosterData) {
-            let totalAllowance = 0, layoverDays = 0, mealDays = 0;
+            let totalAllowance = 0;
             finalRosterData.dutyMap.forEach(duty => {
                 if (duty.isLayover) {
-                    layoverDays++;
                     totalAllowance += EBA_DATA.AwayFromHomeAllowance;
                 } else {
                     const dutyStart = parseTimeToHours(duty.std);
@@ -744,18 +803,21 @@ HTL 0000 PER 0635 PER 1710 FO
                     let dutyDuration = dutyEnd >= dutyStart ? dutyEnd - dutyStart : (24 - dutyStart) + dutyEnd;
                     
                     if(dutyDuration > 11) {
-                        mealDays++;
+                        // Per EBA, entitled to the 'relevant meal allowance'. A long day might span multiple.
+                        // For simplicity and matching the payslip, we'll add one dinner allowance.
                         totalAllowance += EBA_DATA.MealAllowance.Dinner; 
                     }
                 }
             });
-            return { totalAllowance, layoverDays, mealDays };
+            return { totalAllowance };
         }
 
         function updateModalContent() {
             const res = calculationResults;
             const contentDiv = document.getElementById('modal-results-content');
             const formatCurrency = (value) => value.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            const payPeriodDays = parseInt(document.getElementById('payPeriod').value, 10);
+            const periodName = payPeriodDays === 14 ? 'Fortnightly' : 'Monthly';
 
             if (res.error) {
                  contentDiv.innerHTML = `<h3>Error</h3><p>${res.error}</p>`;
@@ -767,30 +829,28 @@ HTL 0000 PER 0635 PER 1710 FO
                 if (res.detectedChanges.length > 0) {
                     changesHtml += '<ul class="changes-list">';
                     res.detectedChanges.forEach(change => {
-                        const month = res.rosterPeriod.start.substring(2,5) || 'Month';
-                        changesHtml += `<li><strong>${change.date} ${month}:</strong> ${change.description}</li>`;
+                        changesHtml += `<li><strong>${change.date}:</strong> ${change.description}</li>`;
                     });
                     changesHtml += '</ul>';
                 } else {
                     changesHtml += '<p>No pay-relevant changes detected between rosters.</p>';
                 }
                 contentDiv.innerHTML = `
-                    <h3>Pay Calculation Results (Permanent)</h3>
+                    <h3>Pay Calculation Results (Permanent ${periodName})</h3>
                     <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
-                        <p class="label">Annual Salary:</p><p>$${formatCurrency(res.annualSalary)}</p>
+                        <p class="label">Annual Salary:</p><p>$${formatCurrency(EBA_DATA.Permanent[res.finalRank][res.level])}</p>
                     </div><hr>${changesHtml}<hr>
-                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <h4>Pay Component Breakdown</h4>
                     <div class="results-grid">
-                        <p class="label">Base Pay:</p><p>$${formatCurrency(res.monthlyBasePay)}</p>
+                        <p class="label">Base Pay:</p><p>$${formatCurrency(res.basePay)}</p>
                         <p class="label">Roster Change Allowances:</p><p>$${formatCurrency(res.rosterChangeAllowance)}</p>
-                        <p class="label">Productivity Bonus (${(res.totalBlockHours - 60 > 0 ? res.totalBlockHours - 60 : 0).toFixed(2)} hrs):</p><p>$${formatCurrency(res.productivityBonus)}</p>
+                        <p class="label">Productivity Bonus:</p><p>$${formatCurrency(res.productivityBonus)}</p>
                         <p class="label">Meal & Layover Allowances:</p><p>$${formatCurrency(res.mealAndLayoverAllowance)}</p>
                         <p class="label">Other Duty Allowances:</p><p>$${formatCurrency(res.otherAllowances)}</p>
                     </div>
                     <div class="total-pay-section">
-                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <h4>Estimated Total ${periodName} Gross Pay:</h4>
                         <p>$${formatCurrency(res.totalGrossPay)}</p>
                     </div>
                     <hr>
@@ -802,23 +862,20 @@ HTL 0000 PER 0635 PER 1710 FO
                     <h3>Pay Calculation Results (Casual)</h3>
                      <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
                     </div><hr>
-                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <h4>Pay Component Breakdown</h4>
                     <div class="results-grid">
                         <p class="label">Flight Pay (${res.totalBlockHours.toFixed(2)} hrs):</p><p>$${formatCurrency(res.flightPay)}</p>
                         <p class="label">Ground Duty Pay (${res.groundDutyDays} days):</p><p>$${formatCurrency(res.groundPay)}</p>
                     </div>
                     <div class="total-pay-section">
-                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <h4>Estimated Total Gross Pay:</h4>
                         <p>$${formatCurrency(res.totalGrossPay)}</p>
                     </div>
                     <hr>
                     <div class="results-grid">
                          <p class="label">Superannuation Contribution:</p><p>$${formatCurrency(res.superContribution)}</p>
                     </div>`;
-            } else {
-                contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
             }
         }
 
@@ -834,11 +891,6 @@ HTL 0000 PER 0635 PER 1710 FO
                         throw new Error("Initial and Final Roster inputs cannot be empty for Permanent pilots.");
                     }
 
-                    const initialPubDate = getPublicationDate(initialRosterText);
-                    const finalPubDate = getPublicationDate(finalRosterText);
-                    if (initialPubDate && finalPubDate && initialPubDate > finalPubDate) {
-                        [initialRosterText, finalRosterText] = [finalRosterText, initialRosterText];
-                    }
                     const rank = document.getElementById('rankSelect').value;
                     const level = document.getElementById('levelSelect').value;
                     const initialRosterData = parseRoster(initialRosterText);
@@ -849,10 +901,9 @@ HTL 0000 PER 0635 PER 1710 FO
                     calculationResults = {
                         mode: 'Permanent',
                         finalRank: rank,
-                        annualSalary: EBA_DATA.Permanent[rank]?.[level],
+                        level: level,
                         ...permanentPay,
-                        detectedChanges,
-                        rosterPeriod: finalRosterData.rosterPeriod
+                        detectedChanges
                     };
 
                 } else { // Casual
@@ -868,10 +919,10 @@ HTL 0000 PER 0635 PER 1710 FO
                         mode: 'Casual',
                         finalRank: rank,
                         ...casualPay,
-                        rosterPeriod: finalRosterData.rosterPeriod
                     };
                 }
             } catch (e) {
+                console.error("Calculation Error:", e);
                 calculationResults = { error: e.message };
             }
             
