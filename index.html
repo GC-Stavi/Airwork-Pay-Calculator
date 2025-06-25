@@ -404,22 +404,24 @@
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
-            document.getElementById('initialRosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
+            document.getElementById('initialRosterInput').value = `TimeMode Local time 1 / 2
+Roster
+(01MAY25 - 31MAY25)
+Kendell, Guy 0463AU BNE FO/73F
 Date Des. Code LE CI Dep STD Arr STA CO BLH
-01 Thu ADMIN BNE 0900 BNE 1700 1700 FO
-02 Fri DIL BNE 0000 BNE 2359 FO
-03 Sat RDO BNE 0000 BNE 2359 FO
-04 Sun RDO BNE 0000 BNE 2359 FO
+01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
+02 Fri DIL 0000 BNE 0000 BNE 2359 FO
 07 Wed PAX 0800 BNE 0900 MEL 1130 1200 FO
 14 Wed PAX 1325 MEL 1425 BNE 1640 1710 FO
-17 Sat RDO BNE 0000 BNE 2359 FO
-18 Sun RDO BNE 0000 BNE 2359 FO`;
-            document.getElementById('finalRosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
+17 Sat RDO 0000 BNE 0000 BNE 2359 FO
+18 Sun RDO 0000 BNE 0000 BNE 2359 FO`;
+            document.getElementById('finalRosterInput').value = `TimeMode Local time 1 / 2
+Roster
+(01MAY25 - 31MAY25)
+Kendell, Guy 0463AU BNE FO/73F
 Date Des. Code LE CI Dep STD Arr STA CO BLH
-01 Thu ADMIN BNE 0900 BNE 1700 1700 FO
-02 Fri DIL BNE 0000 BNE 2359 FO
-03 Sat RDO BNE 0000 BNE 2359 FO
-04 Sun RDO BNE 0000 BNE 2359 FO
+01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
+02 Fri DIL 0000 BNE 0000 BNE 2359 FO
 07 Wed PAX 0905 BNE 1005 MEL 1230 1300 FO
 14 Wed QF7286 F 2340 MEL 0040 LST 0140 73P FO 01:12
 17 Sat PAX 0905 BNE 1105 SIN 1725 1825 FO
@@ -443,6 +445,16 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
         function parseRoster(rosterText) {
             const dutyMap = new Map();
             const lines = rosterText.trim().split('\n');
+            let rosterPeriod = null;
+
+            // Find roster period from the header
+            const dateRangeRegex = /\((\d{2}[A-Z]{3}\d{2})\s*-\s*(\d{2}[A-Z]{3}\d{2})\)/;
+            const rangeMatch = rosterText.match(dateRangeRegex);
+            if (rangeMatch) {
+                rosterPeriod = { start: rangeMatch[1], end: rangeMatch[2] };
+            }
+
+            // Find all lines that represent a daily duty entry
             const dutyLines = lines.filter(line => /^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim()));
 
             dutyLines.forEach(line => {
@@ -450,24 +462,35 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
                 if (parts.length < 3) return;
 
                 const date = parts[0];
-                const dutyCode = parts[2];
+                let dutyCode = parts[2];
                 let std = '0000';
                 let blockHours = 0.0;
                 
                 if (dutyCode.startsWith('QF') || dutyCode.startsWith('AWK')) {
-                     // Flight duty: STD is usually the 6th element if Dep is present, or 5th otherwise
-                    std = parts.includes("PER") || parts.includes("MEL") || parts.includes("SYD") ? parts[parts.indexOf("MEL") + 1] || parts[parts.indexOf("PER") + 1] || parts[parts.indexOf("SYD") + 1] || '0000' : '0000';
-                    const lastPart = parts[parts.length - 1];
-                     if (/^\d{2}:\d{2}$/.test(lastPart)) {
-                        blockHours = parseTimeToHours(lastPart);
-                    }
-                } else if (dutyCode === 'ADMIN' || dutyCode === 'PAX') {
-                    std = parts[4]; // STD is typically the 5th element
+                     const timeRegex = /\d{4}/g;
+                     const times = line.match(timeRegex);
+                     if(times && times.length > 0) std = times[0];
+                     const blockHoursRegex = /(\d{2}:\d{2})$/;
+                     const blockMatch = line.match(blockHoursRegex);
+                     if(blockMatch) blockHours = parseTimeToHours(blockMatch[0]);
+                } else if (['ADMIN', 'PAX', 'FETC', 'DIL', 'RDO', 'PREF'].includes(dutyCode)) {
+                    const timeMatch = line.match(/\d{4}/);
+                    if (timeMatch) std = timeMatch[0];
                 }
 
-                dutyMap.set(date, { date, dutyCode, std, blockHours });
+                if (['RCA', 'F'].includes(parts[2])) {
+                    dutyCode = parts[3];
+                }
+                
+                if (dutyMap.has(date)) {
+                    const existingDuty = dutyMap.get(date);
+                    existingDuty.blockHours += blockHours;
+                } else {
+                    dutyMap.set(date, { date, dutyCode, std, blockHours });
+                }
             });
-            return dutyMap;
+            
+            return { dutyMap, rosterPeriod };
         }
 
         function compareRosters(initialRoster, finalRoster) {
@@ -476,34 +499,35 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
 
             finalRoster.forEach((finalDuty, date) => {
                 const initialDuty = initialRoster.get(date);
+                
                 if (!initialDuty) {
                     changes.push({ date, type: "NEW_DUTY", description: `New duty '${finalDuty.dutyCode}' added.` });
                     return;
                 }
-
-                // Check for RDO Worked
                 if (initialDuty.dutyCode === 'RDO' && finalDuty.dutyCode !== 'RDO') {
                     changes.push({ 
-                        date, 
-                        type: "RDO_WORKED", 
-                        description: `RDO changed to ${finalDuty.dutyCode}.`,
-                        hours: finalDuty.blockHours > 0 ? Math.max(3, finalDuty.blockHours) : 8 // Assume 8 hrs for non-flying
+                        date, type: "RDO_WORKED", description: `RDO changed to ${finalDuty.dutyCode}.`,
+                        hours: finalDuty.blockHours > 0 ? Math.max(3, finalDuty.blockHours) : 8
                     });
                 }
-                // Check for change outside buffer
-                else if (initialDuty.dutyCode !== 'RDO' && finalDuty.dutyCode !== 'RDO') {
-                    const initialTime = parseTimeToHours(initialDuty.std);
-                    const finalTime = parseTimeToHours(finalDuty.std);
-                    const timeDiff = Math.abs(initialTime - finalTime);
-
-                    if (timeDiff > buffer) {
+                else if (initialDuty.dutyCode !== finalDuty.dutyCode || initialDuty.std !== finalDuty.std) {
+                     const initialTime = parseTimeToHours(initialDuty.std);
+                     const finalTime = parseTimeToHours(finalDuty.std);
+                     const timeDiff = Math.abs(initialTime - finalTime);
+                     if (timeDiff > buffer) {
                          changes.push({ 
-                            date, 
-                            type: "OUTSIDE_BUFFER", 
-                            description: `Duty '${finalDuty.dutyCode}' start time changed by ${timeDiff.toFixed(2)} hrs.`,
+                            date, type: "OUTSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (from ${initialDuty.std} to ${finalDuty.std}).`,
                             hours: finalDuty.blockHours
                         });
-                    }
+                     } else if (initialDuty.dutyCode !== finalDuty.dutyCode) {
+                         changes.push({
+                            date, type: "DUTY_CHANGE", description: `Duty changed from ${initialDuty.dutyCode} to ${finalDuty.dutyCode}.`
+                         });
+                     } else {
+                         changes.push({
+                            date, type: "INSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (within buffer).`
+                         })
+                     }
                 }
             });
             return changes;
@@ -521,7 +545,9 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
             if (res.detectedChanges.length > 0) {
                 changesHtml += '<ul class="changes-list">';
                 res.detectedChanges.forEach(change => {
-                    changesHtml += `<li><strong>${change.date} May:</strong> ${change.description}</li>`;
+                    // Use the extracted month from the roster period for display
+                    const month = res.rosterPeriod.start.substring(2,5) || 'Month';
+                    changesHtml += `<li><strong>${change.date} ${month}:</strong> ${change.description}</li>`;
                 });
                 changesHtml += '</ul>';
             } else {
@@ -532,19 +558,20 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
                 <h3>Pay Calculation Results</h3>
                 <div class="results-grid">
                     <p class="label">Rank:</p><p>${res.finalRank}</p>
-                    <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {f:2,M:2})}</p>
+                    <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                    <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
                 <hr>
                 ${changesHtml}
                 <hr>
                 <h4>Pay Component Breakdown (Monthly Estimate)</h4>
                 <div class="results-grid">
-                    <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {f:2,M:2})}</p>
-                    <p class="label">Allowances (RDO/Buffer):</p><p>$${res.allowancePay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                    <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p class="label">Allowances (RDO/Buffer):</p><p>$${res.allowancePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
                 <div class="total-pay-section">
                     <h4>Estimated Total Monthly Gross Pay:</h4>
-                    <p>$${res.totalGrossPay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                    <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                 </div>
             `;
         }
@@ -555,11 +582,10 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
             const initialRosterText = document.getElementById('initialRosterInput').value;
             const finalRosterText = document.getElementById('finalRosterInput').value;
             
-            const initialRoster = parseRoster(initialRosterText);
-            const finalRoster = parseRoster(finalRosterText);
-            const detectedChanges = compareRosters(initialRoster, finalRoster);
+            const initialRosterData = parseRoster(initialRosterText);
+            const finalRosterData = parseRoster(finalRosterText);
+            const detectedChanges = compareRosters(initialRosterData.dutyMap, finalRosterData.dutyMap);
             
-            // For now, let's assume the rank from user selection is primary
             const finalRank = selectedRankByUser;
             const annualSalary = EBA_DATA[finalRank]?.[level];
 
@@ -587,7 +613,8 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
                 monthlyBasePay,
                 allowancePay,
                 totalGrossPay,
-                detectedChanges
+                detectedChanges,
+                rosterPeriod: finalRosterData.rosterPeriod // Use period from final roster
             };
             
             updateModalContent();
