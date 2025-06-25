@@ -4,311 +4,717 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Airwork Pay Calculator</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; margin: 0; background: linear-gradient(to bottom right, #f0f4f8, #e0e7ee); color: #334155; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        .top-banner { width: 100%; background-color: #1e293b; padding: 0.8em 20px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.25); z-index: 100; color: #ffffff; position: relative; }
-        .top-banner h1 { font-size: 1.8em; letter-spacing: 0.2em; text-transform: uppercase; margin: 0; font-weight: 700; }
-        .container { max-width: 1200px; width: 95%; margin: 1rem auto; background: #ffffff; padding: 2em; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1); border-radius: 12px; }
-        .input-grid, .options-grid, .calculate-section { display: grid; gap: 1.5rem; margin-bottom: 1.5rem; }
-        .input-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-        .options-grid { grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); }
-        .roster-inputs-section { margin-top: 1.5rem; border-top: 1px solid #e2e8f0; padding-top: 1.5rem; }
-        .roster-inputs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top:1rem;}
-        .calculate-section { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); justify-content: center; margin-top: 1.5rem; }
-        .input-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; color: #475569; }
-        .input-group select, .input-group input, textarea { width: 100%; padding: 0.8em; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1em; background-color: #f8fafc; box-sizing: border-box; }
-        textarea { height: 200px; font-family: monospace; resize: vertical; }
-        button.primary-button { background: linear-gradient(to right, #4f46e5, #7c3aed); color: #ffffff; font-size: 1em; padding: 0.9em 1.5em; cursor: pointer; border: none; border-radius: 8px; transition: all 0.2s ease; }
-        button.primary-button:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); display: none; justify-content: center; align-items: center; z-index: 1000; }
-        .modal-content { background-color: #ffffff; padding: 2em; border-radius: 12px; box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25); max-width: 800px; width: 90%; position: relative; max-height: 90vh; overflow-y: auto; }
-        .modal-close-button { position: absolute; top: 15px; right: 20px; font-size: 1.8em; font-weight: bold; color: #94a3b8; cursor: pointer; background: none; border: none; }
-        .modal-content h3, .modal-content h4 { margin-top: 0; margin-bottom: 1rem; color: #1e293b; }
-        .modal-content hr { border: 0; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
-        .results-grid { display: grid; grid-template-columns: auto 1fr; gap: 0.5rem 1.5rem; align-items: center; }
-        .results-grid p { margin: 0.5rem 0; }
-        .results-grid .label { font-weight: 600; }
-        .total-pay-section { text-align: center; margin-top: 1.5rem; }
-        .total-pay-section p { font-size: 1.6em; font-weight: bold; color: #16a34a; }
-        .changes-list { list-style-type: none; padding-left: 0; }
-        .changes-list li { background-color: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; padding: 0.75rem 1rem; margin-bottom: 0.5rem; border-radius: 6px; }
-        body.dark-mode { background: linear-gradient(to bottom right, #1e293b, #0f172a); color: #e2e8f0; }
-        body.dark-mode .container, body.dark-mode .modal-content { background: #1e293b; border: 1px solid #334155; }
+        body {
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            background: linear-gradient(to bottom right, #f0f4f8, #e0e7ee);
+            color: #334155;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .top-banner {
+            width: 100%;
+            background-color: #1e293b;
+            padding: 0.8em 20px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+            z-index: 100;
+            color: #ffffff;
+            position: relative;
+        }
+        .top-banner h1 {
+            font-size: 1.8em;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            margin: 0;
+            font-weight: 700;
+        }
+        header {
+            width: 100%;
+            max-width: 1000px;
+            text-align: center;
+            margin: 2rem auto 0;
+            padding: 0 20px;
+        }
+        header p {
+            font-size: 1.1em;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+        header hr {
+            max-width: 250px;
+            margin: 20px auto 30px auto;
+            border: 0;
+            border-top: 2px solid #cbd5e1;
+        }
+        .container {
+            max-width: 1000px;
+            width: 95%;
+            margin: 1rem auto;
+            background: #ffffff;
+            padding: 2em;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+        }
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .input-group select, .input-group input {
+            width: 100%;
+            padding: 0.8em;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1em;
+            background-color: #f8fafc;
+        }
+        textarea {
+            width: 100%;
+            height: 180px;
+            font-family: monospace;
+            padding: 1em;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 14px;
+        }
+        .options-grid {
+            margin-bottom: 1.5rem;
+        }
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+        .checkbox-group {
+            margin-bottom: 1rem;
+        }
+        .checkbox-group input {
+            margin-right: 0.5em;
+        }
+        .calculate-section {
+            display: flex;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+        .help-section {
+            margin-top: 1.5rem;
+        }
+        .help-section details {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+        .help-section summary {
+            font-weight: 600;
+            padding: 0.8em 1em;
+            cursor: pointer;
+            outline: none;
+        }
+        .help-section div {
+            padding: 0 1em 1em 1em;
+            border-top: 1px solid #e2e8f0;
+        }
+        .help-section ol {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .help-section li {
+            margin-bottom: 0.5em;
+        }
+        .top-controls {
+            position: absolute;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            z-index: 110;
+        }
+        button {
+            padding: 0.8em 1.6em;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+        button.primary-button {
+            background: linear-gradient(to right, #4f46e5, #7c3aed);
+            color: #ffffff;
+            font-size: 1.1em;
+            padding: 0.9em 2em;
+        }
+        button.primary-button:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+        .dark-toggle-btn {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #ffffff;
+            padding: 2em;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-close-button {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #94a3b8;
+            cursor: pointer;
+            background: none;
+            border: none;
+            padding: 0;
+            line-height: 1;
+        }
+        .modal-content h3, .modal-content h4 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+        .modal-content hr {
+            border: 0;
+            border-top: 1px solid #e2e8f0;
+            margin: 1.5rem 0;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1.5rem;
+            align-items: center;
+        }
+        .results-grid p {
+            margin: 0.5rem 0;
+        }
+        .results-grid .label {
+            font-weight: 600;
+        }
+        .total-pay-section {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .total-pay-section p {
+            font-size: 1.6em;
+            font-weight: bold;
+            color: #16a34a;
+        }
+        .changes-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .changes-list li {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #f59e0b;
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
+        }
+        .hidden { display: none; }
+        body.dark-mode {
+            background: linear-gradient(to bottom right, #1e293b, #0f172a);
+            color: #e2e8f0;
+        }
+        body.dark-mode .container, body.dark-mode .modal-content {
+            background: #1e293b;
+            border: 1px solid #334155;
+        }
         body.dark-mode .top-banner { background-color: #0f172a; }
-        body.dark-mode .roster-inputs-section, body.dark-mode .modal-content hr { border-top-color: #475569; }
-        body.dark-mode .input-group label, body.dark-mode .modal-close-button { color: #cbd5e1; }
-        body.dark-mode .input-group select, body.dark-mode .input-group input, body.dark-mode textarea { background-color: #2d3748; border-color: #4a5568; color: #e2e8f0; }
+        body.dark-mode header p { color: #94a3b8; }
+        body.dark-mode header hr, body.dark-mode .modal-content hr { border-top-color: #475569; }
+        body.dark-mode .dark-toggle-btn { background: #334155; color: #e2e8f0; }
+        body.dark-mode .input-group label { color: #cbd5e1; }
+        body.dark-mode .input-group select,
+        body.dark-mode .input-group input,
+        body.dark-mode textarea { background-color: #2d3748; border-color: #4a5568; color: #e2e8f0; }
         body.dark-mode .modal-content h3, body.dark-mode .modal-content h4 { color: #f1f5f9; }
-        body.dark-mode .changes-list li { background-color: #2d3748; border-color: #4a5568; }
+        body.dark-mode .modal-close-button { color: #94a3b8; }
+        body.dark-mode .changes-list li, body.dark-mode .help-section details {
+            background-color: #2d3748;
+            border-color: #4a5568;
+        }
+        body.dark-mode .help-section details { border-color: #4a5568; }
+        body.dark-mode .help-section div { border-top-color: #4a5568; }
     </style>
 </head>
 <body>
-
-    <div class="top-banner"><h1>Airwork Pay Calculator</h1></div>
-
+    <div class="top-banner">
+        <h1>Airwork Pay Calculator</h1>
+        <div class="top-controls">
+            <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
+        </div>
+    </div>
+    <header>
+        <p>A tool to estimate pilot pay based on the Airwork 2017 Enterprise Agreement.</p>
+        <hr>
+    </header>
     <main class="container">
         <div class="input-grid">
             <div class="input-group">
-                <label for="rankSelect">Rank</label>
-                <select id="rankSelect">
+                <label for="payPeriodStart">Pay Period Start</label>
+                <input type="date" id="payPeriodStart" />
+            </div>
+            <div class="input-group">
+                <label for="payPeriodEnd">Pay Period End</label>
+                <input type="date" id="payPeriodEnd" />
+            </div>
+        </div>
+        <div class="input-group">
+            <label for="employmentType">Employment Type</label>
+            <select id="employmentType" onchange="toggleMode()">
+                <option value="Permanent">Permanent</option>
+                <option value="Casual">Casual</option>
+            </select>
+        </div>
+        <div id="permanentInputs">
+            <div class="input-grid">
+                <div class="input-group">
+                    <label for="rankSelect">Rank</label>
+                    <select id="rankSelect">
+                        <option value="First Officer">First Officer</option>
+                        <option value="Captain">Captain</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="levelSelect">Pay Level</label>
+                    <select id="levelSelect">
+                        <option value="1">Level 1 (1-3 Yrs)</option>
+                        <option value="2">Level 2 (4 Yrs)</option>
+                        <option value="3">Level 3 (5 Yrs)</option>
+                        <option value="4">Level 4 (6 Yrs)</option>
+                        <option value="5">Level 5 (7 Yrs)</option>
+                        <option value="6">Level 6 (8+ Yrs)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="options-grid">
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="isRHS"> Right Hand Seat Pilot</label>
+                </div>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" id="isTrainingCaptain"> Training/Check Captain</label>
+                </div>
+            </div>
+        </div>
+        <div id="casualInputs" class="hidden">
+             <div class="input-group">
+                <label for="casualRankSelect">Rank</label>
+                <select id="casualRankSelect">
                     <option value="First Officer">First Officer</option>
                     <option value="Captain">Captain</option>
                 </select>
             </div>
-            <div class="input-group">
-                <label for="levelSelect">Pay Level</label>
-                <select id="levelSelect">
-                    <option value="1">Level 1 (1-3 Yrs)</option>
-                    <option value="2">Level 2 (4 Yrs)</option>
-                    <option value="3">Level 3 (5 Yrs)</option>
-                    <option value="4">Level 4 (6 Yrs)</option>
-                    <option value="5">Level 5 (7 Yrs)</option>
-                    <option value="6">Level 6 (8+ Yrs)</option>
-                </select>
+        </div>
+        <div class="roster-inputs" id="rosterInputsContainer">
+            <div class="input-group" id="initialRosterGroup">
+                <label for="initialRosterInput">Initial Roster</label>
+                <textarea id="initialRosterInput" placeholder="Paste the initial roster text here..."></textarea>
+            </div>
+            <div class="input-group" id="finalRosterGroup">
+                <label for="finalRosterInput" id="finalRosterLabel">Final Roster</label>
+                <textarea id="finalRosterInput" placeholder="Paste the final published roster text here..."></textarea>
             </div>
         </div>
-        <div class="options-grid">
-             <div class="input-group">
-                <label for="assessmentDays">Days Undergoing Assessment/Training</label>
-                <input type="number" id="assessmentDays" value="0" min="0">
-            </div>
-             <div class="input-group">
-                <label for="trainingCaptainAllowance">Apply Training Captain Allowance?</label>
-                <input type="checkbox" id="trainingCaptainAllowance">
-            </div>
+        <div class="help-section">
+            <details>
+                <summary>Help with Copy & Paste from PDF</summary>
+                <div>
+                    <p>If Ctrl+A doesn't select text across multiple pages in your PDF viewer, follow these steps:</p>
+                    <ol>
+                        <li>Find the original PDF file on your computer.</li>
+                        <li><strong>Right-click</strong> on the file icon.</li>
+                        <li>Go to <strong>"Open with"</strong> and select <strong>Google Chrome</strong> or <strong>Microsoft Edge</strong>.</li>
+                        <li>Once the PDF opens in your browser, press <strong>Ctrl+A</strong> (or Cmd+A on Mac) to select all text.</li>
+                        <li>Press <strong>Ctrl+C</strong> (or Cmd+C) to copy, then paste into the correct box above.</li>
+                    </ol>
+                </div>
+            </details>
         </div>
-
-        <div class="roster-inputs-section">
-            <h4>Previous Month Rosters</h4>
-            <div class="roster-inputs-grid">
-                <div class="input-group">
-                    <label for="prevInitialRoster">Initial Roster</label>
-                    <textarea id="prevInitialRoster" placeholder="Paste Previous Month's Initial Roster..."></textarea>
-                </div>
-                <div class="input-group">
-                    <label for="prevFinalRoster">Final Roster</label>
-                    <textarea id="prevFinalRoster" placeholder="Paste Previous Month's Final Roster..."></textarea>
-                </div>
-            </div>
-        </div>
-         <div class="roster-inputs-section">
-            <h4>Current Month Rosters</h4>
-            <div class="roster-inputs-grid">
-                <div class="input-group">
-                    <label for="currentInitialRoster">Initial Roster</label>
-                    <textarea id="currentInitialRoster" placeholder="Paste Current Month's Initial Roster..."></textarea>
-                </div>
-                <div class="input-group">
-                    <label for="currentFinalRoster">Final Roster</label>
-                    <textarea id="currentFinalRoster" placeholder="Paste Current Month's Final Roster..."></textarea>
-                </div>
-            </div>
-        </div>
-        
         <div class="calculate-section">
-            <button class="primary-button" onclick="runCalculation('2025-04-14', '2025-04-27')">Calc Pay: 14 Apr - 27 Apr</button>
-            <button class="primary-button" onclick="runCalculation('2025-04-28', '2025-05-11')">Calc Pay: 28 Apr - 11 May</button>
-            <button class="primary-button" onclick="runCalculation('2025-05-12', '2025-05-25')">Calc Pay: 12 May - 25 May</button>
-            <button class="primary-button" onclick="runCalculation('2025-05-26', '2025-06-08')">Calc Pay: 26 May - 08 Jun</button>
+            <button class="primary-button" onclick="runCalculation()">Calculate Pay</button>
         </div>
     </main>
-
     <div id="resultsModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="hideResultsModal()">&times;</button>
             <div id="modal-results-content"></div>
         </div>
     </div>
-    
     <script>
-        const EBA_DATA = {"Permanent":{"First Officer":{1:134645.51,2:140812.55,3:147931.28,4:153524.47,5:160049.07,6:167370.08},"Captain":{1:213689.97,2:219975.39,3:227532.08,4:236339.95,5:246400.17,6:255208.04}},"RDO_WorkRate":{"First Officer":178.07,"Captain":277.78},"ExtendedDutyRate":{"First Officer":178.07,"Captain":277.78},"AwayFromHomeAllowance":166.43,"MealAllowance":{"Dinner":67.19},"TrainingCaptainAllowance":12324.93,"AssessmentAllowance":376.92,"SuperGuaranteeRate":0.115};
-        const MONTHS_MAP = {'JAN':0,'FEB':1,'MAR':2,'APR':3,'MAY':4,'JUN':5,'JUL':6,'AUG':7,'SEP':8,'OCT':9,'NOV':10,'DEC':11};
-
+        // --- GLOBAL VARIABLES ---
+        let calculationResults = {};
+        // --- DATA CONSTANTS (EBA Rates) ---
+        const EBA_DATA = {
+            "Permanent": {
+                "First Officer": { 1: 134645.51, 2: 140812.55, 3: 147931.28, 4: 153524.47, 5: 160049.07, 6: 167370.08 },
+                "Captain": { 1: 213689.97, 2: 219975.39, 3: 227532.08, 4: 236339.95, 5: 246400.17, 6: 255208.04 }
+            },
+            "Casual": {
+                "First Officer": { "Standard": 191.85, "GroundDuty": 470.00 },
+                "Captain": { "Standard": 295.16, "GroundDuty": 620.00, "Training": 312.16, "Checking": 328.57 }
+            },
+            "ProductivityBonus": { "First Officer": 227.83, "Captain": 355.79 },
+            "OvertimeRate": { "First Officer": 78.00, "Captain": 120.00 },
+            "ExtendedDutyRate": { "First Officer": 178.07, "Captain": 277.78 },
+            "MealAllowance": { "Breakfast": 34.88, "Lunch": 39.08, "Dinner": 67.19 },
+            "LayoverAllowance": 125.73,
+            "RHSAllowance": 1412.50, // Per quarter
+            "TrainingCaptainAllowance": 9800.00, // Per annum
+            "SuperGuaranteeRate": 0.115 // As of July 2024
+        };
+        // --- UI FUNCTIONS ---
         function showResultsModal() { document.getElementById('resultsModal').style.display = 'flex'; }
         function hideResultsModal() { document.getElementById('resultsModal').style.display = 'none'; }
-        
+        function toggleDarkMode() {
+            const body = document.body;
+            const btn = document.getElementById('darkModeBtn');
+            const isDark = body.classList.toggle('dark-mode');
+            btn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
+            localStorage.setItem('darkMode', isDark ? 'dark' : 'light');
+        }
+        function toggleMode() {
+            const mode = document.getElementById('employmentType').value;
+            const isCasual = mode === 'Casual';
+            document.getElementById('permanentInputs').classList.toggle('hidden', isCasual);
+            document.getElementById('casualInputs').classList.toggle('hidden', !isCasual);
+            document.getElementById('initialRosterGroup').classList.toggle('hidden', isCasual);
+            document.getElementById('rosterInputsContainer').classList.toggle('casual-mode', isCasual);
+            document.getElementById('finalRosterLabel').textContent = isCasual ? 'Roster' : 'Final Roster';
+        }
+        // --- ON PAGE LOAD ---
         window.onload = function() {
-            document.getElementById('resultsModal').addEventListener('click', e => { if (e.target === e.currentTarget) hideResultsModal(); });
-            // Pre-fill with sample data
-            document.getElementById('prevInitialRoster').value = `(01APR25-30APR25)\n28 Mon RDO\n29 Tue RDO\n30 Wed RDO`;
-            document.getElementById('prevFinalRoster').value = `(01APR25-30APR25)\n28 Mon PAX 0800 BNE 0900 MEL 1130\n29 Tue HTL MEL\n30 Wed RDO`;
-            document.getElementById('currentInitialRoster').value = `(01MAY25-31MAY25)\n12 Mon RDO\n13 Tue RDO`;
-            document.getElementById('currentFinalRoster').value = `(01MAY25-31MAY25)\n12 Mon HTL MEL 0600\n13 Tue QF7282 F 0250 MEL 0350 PER 0635 04:13`;
-        };
-
-        function parseTimeToHours(timeStr) {
-            if (!timeStr || typeof timeStr !== 'string') return 0;
-            const cleaned = timeStr.replace(/[^0-9]/g, '');
-            if (cleaned.length < 3) return 0;
-            const h = parseInt(cleaned.slice(0, -2), 10), m = parseInt(cleaned.slice(-2), 10);
-            return isNaN(h) || isNaN(m) ? 0 : h + m / 60;
-        }
-
-        function getRosterMonth(rosterText) {
-            const match = rosterText.match(/\((\d{2}([A-Z]{3})\d{2})/);
-            return match ? MONTHS_MAP[match[2]] : null;
-        }
-
-        function parseRoster(rosterText) {
-            const dutyMap = new Map();
-            if (!rosterText) return dutyMap;
-            const lines = rosterText.trim().split('\n');
-            let currentEntries = [];
-            const dateRegex = /^\s*(\d{2})\s*(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/;
-            lines.forEach(line => {
-                const match = line.trim().match(dateRegex);
-                if (match) {
-                    if (currentEntries.length > 0) dutyMap.set(currentEntries[0].trim().match(dateRegex)[1], processDayEntries(currentEntries));
-                    currentEntries = [line];
-                } else if (currentEntries.length > 0) currentEntries.push(line);
+            const savedMode = localStorage.getItem('darkMode');
+            const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+            if (savedMode === 'dark' || (!savedMode && prefersDark)) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('darkModeBtn').textContent = 'Light Mode';
+            }
+            document.getElementById('resultsModal').addEventListener('click', function(event) {
+                if (event.target === this) { hideResultsModal(); }
             });
-            if (currentEntries.length > 0) dutyMap.set(currentEntries[0].trim().match(dateRegex)[1], processDayEntries(currentEntries));
-            return dutyMap;
+        };
+        // --- DATE HELPERS ---
+        const MONTHS_MAP = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11 };
+        function parseDayToDate(dayStr, month, year) {
+            const day = parseInt(dayStr.split(' ')[0], 10);
+            return new Date(year, month, day);
         }
-
-        function processDayEntries(entries) {
-            const day = { dutyCode: 'UNKNOWN', std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
-            const groundCodes = ['ADMIN', 'SIM', 'FETC', 'PREF'];
-            entries.forEach(line => {
-                if (/^\s*(\d{2})/.test(line)) day.dutyCode = (line.trim().split(/\s+/)[2] || 'UNKNOWN');
-                if (groundCodes.some(c => line.includes(c))) day.isGroundDuty = true;
-                const bhMatch = line.match(/(\d{1,2}:\d{2})\s*$/);
-                if (bhMatch) day.blockHours += parseTimeToHours(bhMatch[0]);
-                if (line.includes('HTL')) day.isLayover = true;
-                const times = line.match(/\b\d{4}\b/g) || [];
-                if (times.length > 0) {
-                    day.std = day.std === '0000' ? times[0] : day.std;
-                    day.signOff = times[times.length - 1];
+        function extractMonthYear(rosterText) {
+            const match = rosterText.match(/\((\d{2})([A-Z]{3})(\d{2})/);
+            if (!match) return { month: null, year: null };
+            const month = MONTHS_MAP[match[2]];
+            const year = 2000 + parseInt(match[3], 10);
+            return { month, year };
+        }
+        function filterDutyMapByPeriod(dutyMap, month, year, periodStart, periodEnd) {
+            const filtered = new Map();
+            dutyMap.forEach((duty, dayStr) => {
+                const dutyDate = parseDayToDate(dayStr, month, year);
+                if (dutyDate >= periodStart && dutyDate <= periodEnd) {
+                    filtered.set(dayStr, duty);
                 }
             });
-            return day;
+            return filtered;
         }
-
-        function filterDutiesForPayPeriod(dutyMap, startDate, endDate, rosterMonth) {
-            const filteredMap = new Map();
-            const year = startDate.getFullYear();
-            dutyMap.forEach((duty, day) => {
-                const dayNum = parseInt(day, 10);
-                const currentMonth = (dayNum >= startDate.getDate() && rosterMonth === startDate.getMonth()) || (dayNum <= endDate.getDate() && rosterMonth === endDate.getMonth()) ? rosterMonth : -1;
-                if(currentMonth === -1) return;
-
-                const dutyDate = new Date(Date.UTC(year, currentMonth, dayNum));
-                if (dutyDate >= startDate && dutyDate <= endDate) filteredMap.set(day, duty);
+        // --- ROSTER PARSING ---
+        function parseTimeToHours(timeStr) {
+            if (!timeStr || typeof timeStr !== 'string') return 0;
+            timeStr = timeStr.replace(':', '');
+            if (timeStr.length < 4) return 0;
+            const hours = parseInt(timeStr.substring(0, 2), 10);
+            const minutes = parseInt(timeStr.substring(2, 4), 10);
+            return hours + (minutes / 60);
+        }
+        function getPublicationDate(rosterText) {
+            const match = rosterText.match(/(\d{2})([A-Z]{3})(\d{2})\s+(\d{2}:\d{2})/);
+            if (!match) return null;
+            const day = parseInt(match[1], 10);
+            const month = MONTHS_MAP[match[2]];
+            const year = 2000 + parseInt(match[3], 10);
+            const timeParts = match[4].split(':');
+            const hours = parseInt(timeParts[0], 10);
+            const minutes = parseInt(timeParts[1], 10);
+            if (isNaN(day) || month === undefined || isNaN(year) || isNaN(hours) || isNaN(minutes)) return null;
+            return new Date(year, month, day, hours, minutes);
+        }
+        function parseRoster(rosterText) {
+            const dutyMap = new Map();
+            const lines = rosterText.trim().split('\n');
+            let rosterPeriod = null;
+            const dateRangeRegex = /\((\d{2}[A-Z]{3}\d{2})\s*-\s*(\d{2}[A-Z]{3}\d{2})\)/;
+            const rangeMatch = rosterText.match(dateRangeRegex);
+            if (rangeMatch) rosterPeriod = { start: rangeMatch[1], end: rangeMatch[2] };
+            let currentDayEntries = [];
+            for (const line of lines) {
+                if (/^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim())) {
+                    if (currentDayEntries.length > 0) {
+                        const date = currentDayEntries[0].trim().split(/\s+/)[0];
+                        dutyMap.set(date, processDayEntries(currentDayEntries));
+                    }
+                    currentDayEntries = [line];
+                } else { currentDayEntries.push(line); }
+            }
+            if (currentDayEntries.length > 0) {
+                const date = currentDayEntries[0].trim().split(/\s+/)[0];
+                dutyMap.set(date, processDayEntries(currentDayEntries));
+            }
+            return { dutyMap, rosterPeriod };
+        }
+        function processDayEntries(entries) {
+            const firstLineParts = entries[0].trim().split(/\s+/);
+            const dayInfo = { date: firstLineParts[0], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
+            let dutyStartTime = null, dutyEndTime = null;
+            const groundDutyCodes = ['ADMIN', 'SIM'];
+            entries.forEach(line => {
+                if (groundDutyCodes.some(code => line.includes(code))) {
+                    dayInfo.isGroundDuty = true;
+                }
+                const blockHoursMatch = line.match(/(\d{2}:\d{2})$/);
+                if (blockHoursMatch) dayInfo.blockHours += parseTimeToHours(blockHoursMatch[0]);
+                if (line.includes('HTL')) dayInfo.isLayover = true;
+                const timeMatches = line.match(/\d{4}/g) || [];
+                if (dutyStartTime === null && timeMatches.length > 0) dutyStartTime = timeMatches[0];
+                if (timeMatches.length > 0) dutyEndTime = timeMatches[timeMatches.length - 1];
             });
-            return filteredMap;
+            dayInfo.std = dutyStartTime || '0000';
+            dayInfo.signOff = dutyEndTime || '0000';
+            return dayInfo;
         }
-
         function compareRosters(initialRoster, finalRoster) {
             const changes = [];
+            const buffer = 2.0;
             finalRoster.forEach((finalDuty, date) => {
                 const initialDuty = initialRoster.get(date);
-                if (!initialDuty) return;
+                if (!initialDuty) {
+                    changes.push({ date, type: "NEW_DUTY", description: `New duty '${finalDuty.dutyCode}' added.` });
+                    return;
+                }
                 if (initialDuty.dutyCode === 'RDO' && finalDuty.dutyCode !== 'RDO') {
-                    const subType = finalDuty.blockHours > 0 ? 'flying' : 'non-flying';
-                    changes.push({ date, type: "RDO_WORKED", subType, description: `RDO changed to ${finalDuty.dutyCode}.`, hours: finalDuty.blockHours });
-                } else if (initialDuty.dutyCode !== 'RDO' && Math.abs(parseTimeToHours(initialDuty.std) - parseTimeToHours(finalDuty.std)) > 2) {
-                    const hourDiff = Math.max(0, finalDuty.blockHours - initialDuty.blockHours);
-                    changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty changed outside buffer (Net change: ${hourDiff.toFixed(2)} hrs)`, hours: hourDiff });
+                    changes.push({ date, type: "RDO_WORKED", description: `RDO changed to ${finalDuty.dutyCode}.`, hours: finalDuty.blockHours > 0 ? Math.max(3, finalDuty.blockHours) : 8 });
+                } else if (initialDuty.dutyCode !== 'RDO' && (initialDuty.dutyCode !== finalDuty.dutyCode || initialDuty.std !== finalDuty.std)) {
+                     const initialTime = parseTimeToHours(initialDuty.std);
+                     const finalTime = parseTimeToHours(finalDuty.std);
+                     const timeDiff = Math.abs(initialTime - finalTime);
+                     if (timeDiff > buffer) {
+                         changes.push({ date, type: "OUTSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (from ${initialDuty.std} to ${finalDuty.std}).`, hours: finalDuty.blockHours });
+                     } else if (initialDuty.dutyCode !== finalDuty.dutyCode) {
+                         changes.push({ date, type: "DUTY_CHANGE", description: `Duty changed from ${initialDuty.dutyCode} to ${finalDuty.dutyCode}.`});
+                     } else {
+                         changes.push({ date, type: "INSIDE_BUFFER", description: `Duty start changed by ${timeDiff.toFixed(2)} hrs (within buffer).`});
+                     }
                 }
             });
             return changes;
         }
-        
-        function calculatePermanentPay(finalRoster, level, rank, changes) {
-            const annualSalary = EBA_DATA.Permanent[rank][level];
-            let rosterChangePay = 0;
-            changes.forEach(c => {
-                if (c.type === 'RDO_WORKED') rosterChangePay += c.subType === 'flying' ? Math.max(3, c.hours) * EBA_DATA.RDO_WorkRate[rank] : (annualSalary / 260);
-                else if (c.type === 'OUTSIDE_BUFFER') rosterChangePay += c.hours * EBA_DATA.ExtendedDutyRate[rank];
-            });
-            let allowancePay = 0;
-            finalRoster.forEach(d => {
-                if (d.isLayover) allowancePay += EBA_DATA.AwayFromHomeAllowance;
-                else if (parseTimeToHours(d.signOff) - parseTimeToHours(d.std) > 11) allowancePay += EBA_DATA.MealAllowance.Dinner;
-            });
-            let otherPay = 0;
-            if (document.getElementById('trainingCaptainAllowance').checked) otherPay += EBA_DATA.TrainingCaptainAllowance / (365.25 / 14);
-            otherPay += parseInt(document.getElementById('assessmentDays').value, 10) * EBA_DATA.AssessmentAllowance;
-
-            const basePay = annualSalary / (365.25 / 14);
-            const superablePay = basePay + rosterChangePay + otherPay;
-            const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
-            const totalGrossPay = basePay + rosterChangePay + allowancePay + otherPay;
-            return { basePay, rosterChangePay, allowancePay, otherPay, superContribution, totalGrossPay };
-        }
-        
-        function runCalculation(startStr, endStr) {
-            let results = {};
-            try {
-                const startDate = new Date(Date.UTC.apply(null, startStr.split('-').map((n,i) => i===1?n-1:n)));
-                const endDate = new Date(Date.UTC.apply(null, endStr.split('-').map((n,i) => i===1?n-1:n)));
-
-                const prevInitialText = document.getElementById('prevInitialRoster').value;
-                const prevFinalText = document.getElementById('prevFinalRoster').value;
-                const currentInitialText = document.getElementById('currentInitialRoster').value;
-                const currentFinalText = document.getElementById('currentFinalRoster').value;
-                
-                const prevMonth = getRosterMonth(prevInitialText);
-                const currentMonth = getRosterMonth(currentInitialText);
-                
-                if((startDate.getMonth() !== prevMonth && startDate.getMonth() !== currentMonth) || (endDate.getMonth() !== prevMonth && endDate.getMonth() !== currentMonth)) {
-                    throw new Error("Roster months do not match the selected pay period. Please check your pasted text.");
+        function calculatePermanentPay(finalRosterData, level, rank, detectedChanges) {
+            const annualSalary = EBA_DATA.Permanent[rank]?.[level];
+            if (!annualSalary) return { totalGrossPay: 0 };
+            let rosterChangeAllowance = 0;
+            const allowanceRate = EBA_DATA.ExtendedDutyRate[rank] || 0;
+            detectedChanges.forEach(change => {
+                if (change.type === 'RDO_WORKED' || change.type === 'OUTSIDE_BUFFER') {
+                    rosterChangeAllowance += change.hours * allowanceRate;
                 }
-
-                const initialMap = new Map([...parseRoster(prevInitialText), ...parseRoster(currentInitialText)]);
-                const finalMap = new Map([...parseRoster(prevFinalText), ...parseRoster(currentFinalText)]);
-                
-                const initialFiltered = filterDutiesForPayPeriod(initialMap, startDate, endDate, startDate.getMonth());
-                const finalFiltered = filterDutiesForPayPeriod(finalMap, startDate, endDate, startDate.getMonth());
-                
+            });
+            const { totalAllowance: mealAndLayoverAllowance } = calculateAllowances(finalRosterData);
+            let otherAllowances = 0;
+            if (document.getElementById('isRHS').checked) {
+                otherAllowances += EBA_DATA.RHSAllowance / 3;
+            }
+            if (document.getElementById('isTrainingCaptain').checked) {
+                otherAllowances += EBA_DATA.TrainingCaptainAllowance / 12;
+            }
+            const monthlyBasePay = annualSalary / 12;
+            const superablePay = monthlyBasePay + rosterChangeAllowance + otherAllowances;
+            const superContribution = superablePay * EBA_DATA.SuperGuaranteeRate;
+            const totalGrossPay = monthlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
+            return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
+        }
+        function calculateCasualPay(finalRosterData, rank) {
+            const casualRates = EBA_DATA.Casual[rank];
+            let flightPay = 0, groundPay = 0, totalBlockHours = 0, groundDutyDays = 0;
+            finalRosterData.dutyMap.forEach(duty => {
+                if(duty.isGroundDuty) {
+                    groundDutyDays++;
+                    groundPay += casualRates.GroundDuty;
+                } else if(duty.blockHours > 0) {
+                     totalBlockHours += duty.blockHours;
+                }
+            });
+            flightPay = totalBlockHours * casualRates.Standard;
+            const totalGrossPay = flightPay + groundPay;
+            const superContribution = totalGrossPay * EBA_DATA.SuperGuaranteeRate;
+            return { totalBlockHours, groundDutyDays, totalGrossPay, groundPay, flightPay, superContribution };
+        }
+        function calculateAllowances(finalRosterData) {
+            let totalAllowance = 0, layoverDays = 0, mealDays = 0;
+            finalRosterData.dutyMap.forEach(duty => {
+                if (duty.isLayover) {
+                    layoverDays++;
+                    totalAllowance += EBA_DATA.LayoverAllowance;
+                }
+                const dutyStart = parseTimeToHours(duty.std);
+                const dutyEnd = parseTimeToHours(duty.signOff);
+                let dutyDuration = dutyEnd > dutyStart ? dutyEnd - dutyStart : (24 - dutyStart) + dutyEnd;
+                if(dutyDuration > 11) {
+                    mealDays++;
+                    totalAllowance += EBA_DATA.MealAllowance.Dinner;
+                }
+            });
+            return { totalAllowance, layoverDays, mealDays };
+        }
+        function updateModalContent() {
+            const res = calculationResults;
+            const contentDiv = document.getElementById('modal-results-content');
+            if (res.mode === 'Permanent') {
+                let changesHtml = '<h4>Detected Roster Changes</h4>';
+                if (res.detectedChanges.length > 0) {
+                    changesHtml += '<ul class="changes-list">';
+                    res.detectedChanges.forEach(change => {
+                        changesHtml += `<li><strong>${change.date}:</strong> ${change.description}</li>`;
+                    });
+                    changesHtml += '</ul>';
+                } else {
+                    changesHtml += '<p>No pay-relevant changes detected between rosters.</p>';
+                }
+                contentDiv.innerHTML = `
+                    <h3>Pay Calculation Results (Permanent)</h3>
+                    <div class="results-grid">
+                        <p class="label">Rank:</p><p>${res.finalRank}</p>
+                        <p class="label">Pay Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                        <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div><hr>${changesHtml}<hr>
+                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <div class="results-grid">
+                        <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Roster Change Allowances:</p><p>$${res.rosterChangeAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Meal & Layover Allowances:</p><p>$${res.mealAndLayoverAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Other Duty Allowances:</p><p>$${res.otherAllowances.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <div class="total-pay-section">
+                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <hr>
+                    <div class="results-grid">
+                         <p class="label">Superannuation Contribution:</p><p>$${res.superContribution.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>`;
+            } else if (res.mode === 'Casual') {
+                 contentDiv.innerHTML = `
+                    <h3>Pay Calculation Results (Casual)</h3>
+                     <div class="results-grid">
+                        <p class="label">Rank:</p><p>${res.finalRank}</p>
+                        <p class="label">Pay Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                    </div><hr>
+                    <h4>Pay Component Breakdown (Monthly Estimate)</h4>
+                    <div class="results-grid">
+                        <p class="label">Flight Pay (${res.totalBlockHours.toFixed(2)} hrs):</p><p>$${res.flightPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Ground Duty Pay (${res.groundDutyDays} days):</p><p>$${res.groundPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <div class="total-pay-section">
+                        <h4>Estimated Total Monthly Gross Pay:</h4>
+                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>
+                    <hr>
+                    <div class="results-grid">
+                         <p class="label">Superannuation Contribution:</p><p>$${res.superContribution.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    </div>`;
+            } else {
+                 contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
+            }
+        }
+        function runCalculation() {
+            const employmentType = document.getElementById('employmentType').value;
+            const periodStartVal = document.getElementById('payPeriodStart').value;
+            const periodEndVal = document.getElementById('payPeriodEnd').value;
+            if (!periodStartVal || !periodEndVal) {
+                alert("Please select both pay period start and end dates.");
+                return;
+            }
+            const periodStart = new Date(periodStartVal);
+            const periodEnd = new Date(periodEndVal);
+            if (periodEnd < periodStart) {
+                alert("Pay Period End must be after Start.");
+                return;
+            }
+            if(employmentType === 'Permanent') {
+                let initialRosterText = document.getElementById('initialRosterInput').value;
+                let finalRosterText = document.getElementById('finalRosterInput').value;
+                const { month, year } = extractMonthYear(finalRosterText);
+                const initialRosterData = parseRoster(initialRosterText);
+                const finalRosterData = parseRoster(finalRosterText);
+                const filteredInitialDutyMap = filterDutyMapByPeriod(initialRosterData.dutyMap, month, year, periodStart, periodEnd);
+                const filteredFinalDutyMap = filterDutyMapByPeriod(finalRosterData.dutyMap, month, year, periodStart, periodEnd);
+                const detectedChanges = compareRosters(filteredInitialDutyMap, filteredFinalDutyMap);
+                const filteredFinalRosterData = { ...finalRosterData, dutyMap: filteredFinalDutyMap };
                 const rank = document.getElementById('rankSelect').value;
                 const level = document.getElementById('levelSelect').value;
-                const changes = compareRosters(initialFiltered, finalFiltered);
-                const pay = calculatePermanentPay(finalFiltered, level, rank, changes);
-                results = { mode: 'Permanent', rank, level, ...pay, changes, payPeriod: `${startStr} to ${endStr}` };
-            } catch (e) {
-                console.error("Calculation Error:", e);
-                results = { error: e.message };
+                const permanentPay = calculatePermanentPay(filteredFinalRosterData, level, rank, detectedChanges);
+                calculationResults = {
+                    mode: 'Permanent',
+                    finalRank: rank,
+                    annualSalary: EBA_DATA.Permanent[rank]?.[level],
+                    ...permanentPay,
+                    detectedChanges,
+                    rosterPeriod: {
+                        start: periodStart.toLocaleDateString(),
+                        end: periodEnd.toLocaleDateString()
+                    }
+                };
+            } else { // Casual
+                const finalRosterText = document.getElementById('finalRosterInput').value;
+                const { month, year } = extractMonthYear(finalRosterText);
+                const finalRosterData = parseRoster(finalRosterText);
+                const filteredFinalDutyMap = filterDutyMapByPeriod(finalRosterData.dutyMap, month, year, periodStart, periodEnd);
+                const filteredFinalRosterData = { ...finalRosterData, dutyMap: filteredFinalDutyMap };
+                const rank = document.getElementById('casualRankSelect').value;
+                const casualPay = calculateCasualPay(filteredFinalRosterData, rank);
+                calculationResults = {
+                    mode: 'Casual',
+                    finalRank: rank,
+                    ...casualPay,
+                    rosterPeriod: {
+                        start: periodStart.toLocaleDateString(),
+                        end: periodEnd.toLocaleDateString()
+                    }
+                };
             }
-            updateModalContent(results);
+            updateModalContent();
             showResultsModal();
-        }
-
-        function updateModalContent(res) {
-            const content = document.getElementById('modal-results-content');
-            const fC = (v) => (v || 0).toLocaleString('en-AU', { style: 'currency', currency: 'AUD' });
-            if (res.error) { content.innerHTML = `<h3>Error</h3><p>${res.error}</p>`; return; }
-            let changesHtml = '<h4>Roster Changes in Period</h4>';
-            if (res.changes.length > 0) {
-                changesHtml += '<ul class="changes-list">';
-                res.changes.forEach(c => changesHtml += `<li><strong>Day ${c.date}:</strong> ${c.description}</li>`);
-                changesHtml += '</ul>';
-            } else changesHtml += '<p>No pay-relevant changes detected.</p>';
-
-            content.innerHTML = `
-                <h3>Pay Calculation Results (${res.payPeriod})</h3>
-                <div class="results-grid">
-                    <p class="label">Rank:</p><p>${res.rank}, Level ${res.level}</p>
-                    <p class="label">Annual Salary:</p><p>${fC(EBA_DATA.Permanent[res.rank][res.level])}</p>
-                </div><hr>${changesHtml}<hr>
-                <h4>Pay Component Breakdown</h4>
-                <div class="results-grid">
-                    <p class="label">Base Pay:</p><p>${fC(res.basePay)}</p>
-                    <p class="label">Roster Change Pay:</p><p>${fC(res.rosterChangePay)}</p>
-                    <p class="label">Allowances (Meals/Layovers):</p><p>${fC(res.allowancePay)}</p>
-                    <p class="label">Other Allowances (Training/etc):</p><p>${fC(res.otherPay)}</p>
-                </div>
-                <div class="total-pay-section">
-                    <h4>Estimated Total Fortnightly Gross Pay:</h4>
-                    <p>${fC(res.totalGrossPay)}</p>
-                </div>
-                <hr>
-                <div class="results-grid">
-                     <p class="label">Superannuation Contribution:</p><p>${fC(res.superContribution)}</p>
-                </div>`;
         }
     </script>
 </body>
