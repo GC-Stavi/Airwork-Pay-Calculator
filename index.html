@@ -29,6 +29,7 @@
             box-shadow: 0 2px 5px rgba(0,0,0,0.25);
             z-index: 100;
             color: #ffffff;
+            position: relative; /* Added for positioning context */
         }
 
         .top-banner h1 {
@@ -120,11 +121,7 @@
         }
 
         .options-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
             margin-bottom: 1.5rem;
-            align-items: center;
         }
 
         .checkbox-group label {
@@ -132,6 +129,11 @@
             align-items: center;
             cursor: pointer;
         }
+        
+        .checkbox-group {
+            margin-bottom: 1rem; /* Spacing for stacked checkboxes */
+        }
+
 
         .checkbox-group input {
             margin-right: 0.5em;
@@ -174,8 +176,9 @@
         /* --- Buttons & Controls --- */
         .top-controls {
             position: absolute;
-            top: 15px;
+            top: 50%;
             right: 20px;
+            transform: translateY(-50%);
             z-index: 110;
         }
         
@@ -370,10 +373,9 @@
 
     <div class="top-banner">
         <h1>Airwork Pay Calculator</h1>
-    </div>
-
-    <div class="top-controls">
-        <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
+        <div class="top-controls">
+            <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
+        </div>
     </div>
 
     <header>
@@ -742,18 +744,18 @@ HTL 0000 PER 0635 PER 1710 FO
                     <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
                         <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
-                        <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div><hr>${changesHtml}<hr>
                     <h4>Pay Component Breakdown (Monthly Estimate)</h4>
                     <div class="results-grid">
-                        <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {f:2,M:2})}</p>
-                        <p class="label">Roster Change Allowances:</p><p>$${res.rosterChangeAllowance.toLocaleString('en-AU', {f:2,M:2})}</p>
-                        <p class="label">Meal & Layover Allowances:</p><p>$${res.mealAndLayoverAllowance.toLocaleString('en-AU', {f:2,M:2})}</p>
-                        <p class="label">Other Duty Allowances:</p><p>$${res.otherAllowances.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Roster Change Allowances:</p><p>$${res.rosterChangeAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Meal & Layover Allowances:</p><p>$${res.mealAndLayoverAllowance.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Other Duty Allowances:</p><p>$${res.otherAllowances.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <div class="total-pay-section">
                         <h4>Estimated Total Monthly Gross Pay:</h4>
-                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>`;
             } else if (res.mode === 'Casual') {
                  contentDiv.innerHTML = `
@@ -764,12 +766,12 @@ HTL 0000 PER 0635 PER 1710 FO
                     </div><hr>
                     <h4>Pay Component Breakdown (Monthly Estimate)</h4>
                     <div class="results-grid">
-                        <p class="label">Flight Pay (${res.totalBlockHours.toFixed(2)} hrs):</p><p>$${res.flightPay.toLocaleString('en-AU', {f:2,M:2})}</p>
-                        <p class="label">Ground Duty Pay (${res.groundDutyDays} days):</p><p>$${res.groundPay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p class="label">Flight Pay (${res.totalBlockHours.toFixed(2)} hrs):</p><p>$${res.flightPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                        <p class="label">Ground Duty Pay (${res.groundDutyDays} days):</p><p>$${res.groundPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>
                     <div class="total-pay-section">
                         <h4>Estimated Total Monthly Gross Pay:</h4>
-                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                        <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div>`;
             } else {
                  contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
@@ -823,4 +825,4 @@ HTL 0000 PER 0635 PER 1710 FO
 
     </script>
 </body>
-</html>
+</ht
