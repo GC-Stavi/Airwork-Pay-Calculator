@@ -4,8 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Airwork Pay Calculator</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
+        /* --- General Layout & Base Styles --- */
         body {
             font-family: 'Inter', sans-serif;
             margin: 0;
@@ -16,16 +19,19 @@
             flex-direction: column;
             align-items: center;
         }
+
+        /* --- Top Banner --- */
         .top-banner {
             width: 100%;
-            background-color: #1e293b;
+            background-color: #1e293b; /* Dark blue-gray */
             padding: 0.8em 20px;
             text-align: center;
             box-shadow: 0 2px 5px rgba(0,0,0,0.25);
             z-index: 100;
             color: #ffffff;
-            position: relative;
+            position: relative; /* Added for positioning context */
         }
+
         .top-banner h1 {
             font-size: 1.8em;
             letter-spacing: 0.2em;
@@ -33,6 +39,8 @@
             margin: 0;
             font-weight: 700;
         }
+
+        /* --- Page Header --- */
         header {
             width: 100%;
             max-width: 1000px;
@@ -40,17 +48,21 @@
             margin: 2rem auto 0;
             padding: 0 20px;
         }
+
         header p {
             font-size: 1.1em;
             color: #64748b;
             margin-bottom: 20px;
         }
+
         header hr {
             max-width: 250px;
             margin: 20px auto 30px auto;
             border: 0;
             border-top: 2px solid #cbd5e1;
         }
+
+        /* --- Main Content Container --- */
         .container {
             max-width: 1000px;
             width: 95%;
@@ -60,18 +72,34 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
         }
+        
+        /* --- Form & Input Styles --- */
+        .roster-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+        
+        .roster-inputs.casual-mode .input-group:first-child {
+            grid-column: 1 / -1;
+        }
+
+
         .input-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 1.5rem;
             margin-bottom: 1.5rem;
         }
+
         .input-group label {
             display: block;
             margin-bottom: 0.5rem;
             font-weight: 600;
             color: #475569;
         }
+
         .input-group select, .input-group input {
             width: 100%;
             padding: 0.8em;
@@ -80,9 +108,10 @@
             font-size: 1em;
             background-color: #f8fafc;
         }
+
         textarea {
             width: 100%;
-            height: 180px;
+            height: 200px;
             font-family: monospace;
             padding: 1em;
             border: 1px solid #cbd5e1;
@@ -90,25 +119,33 @@
             resize: vertical;
             font-size: 14px;
         }
+
         .options-grid {
             margin-bottom: 1.5rem;
         }
+
         .checkbox-group label {
             display: flex;
             align-items: center;
             cursor: pointer;
         }
+        
         .checkbox-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1rem; /* Spacing for stacked checkboxes */
         }
+
+
         .checkbox-group input {
             margin-right: 0.5em;
         }
+        
         .calculate-section {
             display: flex;
             justify-content: center;
             margin-top: 1.5rem;
         }
+
+        /* --- Help Section --- */
         .help-section {
             margin-top: 1.5rem;
         }
@@ -134,6 +171,9 @@
         .help-section li {
             margin-bottom: 0.5em;
         }
+
+
+        /* --- Buttons & Controls --- */
         .top-controls {
             position: absolute;
             top: 50%;
@@ -141,6 +181,7 @@
             transform: translateY(-50%);
             z-index: 110;
         }
+        
         button {
             padding: 0.8em 1.6em;
             font-size: 1em;
@@ -150,21 +191,26 @@
             border: 1px solid transparent;
             transition: all 0.2s ease;
         }
+        
         button.primary-button {
             background: linear-gradient(to right, #4f46e5, #7c3aed);
             color: #ffffff;
             font-size: 1.1em;
             padding: 0.9em 2em;
         }
+        
         button.primary-button:hover {
             opacity: 0.9;
             transform: translateY(-1px);
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+        
         .dark-toggle-btn {
             background: #e2e8f0;
             color: #475569;
         }
+
+        /* --- Modal Styles --- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -172,11 +218,12 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.6);
-            display: none;
+            display: none; /* Initially hidden */
             justify-content: center;
             align-items: center;
             z-index: 1000;
         }
+
         .modal-content {
             background-color: #ffffff;
             padding: 2em;
@@ -188,6 +235,7 @@
             max-height: 90vh;
             overflow-y: auto;
         }
+
         .modal-close-button {
             position: absolute;
             top: 15px;
@@ -201,37 +249,45 @@
             padding: 0;
             line-height: 1;
         }
+
         .modal-content h3, .modal-content h4 {
             margin-top: 0;
             margin-bottom: 1rem;
             color: #1e293b;
         }
+
         .modal-content hr {
             border: 0;
             border-top: 1px solid #e2e8f0;
             margin: 1.5rem 0;
         }
+        
         .results-grid {
             display: grid;
             grid-template-columns: auto 1fr;
             gap: 0.5rem 1.5rem;
             align-items: center;
         }
+        
         .results-grid p {
             margin: 0.5rem 0;
         }
+        
         .results-grid .label {
             font-weight: 600;
         }
+        
         .total-pay-section {
             text-align: center;
             margin-top: 1.5rem;
         }
+        
         .total-pay-section p {
             font-size: 1.6em;
             font-weight: bold;
             color: #16a34a;
         }
+        
         .changes-list {
             list-style-type: none;
             padding-left: 0;
@@ -239,60 +295,96 @@
         .changes-list li {
             background-color: #f8fafc;
             border: 1px solid #e2e8f0;
-            border-left: 4px solid #f59e0b;
+            border-left: 4px solid #f59e0b; /* Amber color for changes */
             padding: 0.75rem 1rem;
             margin-bottom: 0.5rem;
             border-radius: 6px;
         }
-        .hidden { display: none; }
+
+        .hidden {
+            display: none;
+        }
+        
+        /* --- DARK MODE STYLES --- */
         body.dark-mode {
             background: linear-gradient(to bottom right, #1e293b, #0f172a);
             color: #e2e8f0;
         }
+
         body.dark-mode .container, body.dark-mode .modal-content {
             background: #1e293b;
             border: 1px solid #334155;
         }
-        body.dark-mode .top-banner { background-color: #0f172a; }
-        body.dark-mode header p { color: #94a3b8; }
-        body.dark-mode header hr, body.dark-mode .modal-content hr { border-top-color: #475569; }
-        body.dark-mode .dark-toggle-btn { background: #334155; color: #e2e8f0; }
-        body.dark-mode .input-group label { color: #cbd5e1; }
+        
+        body.dark-mode .top-banner {
+             background-color: #0f172a;
+        }
+
+        body.dark-mode header p {
+            color: #94a3b8;
+        }
+
+        body.dark-mode header hr, body.dark-mode .modal-content hr {
+            border-top-color: #475569;
+        }
+
+        body.dark-mode .dark-toggle-btn {
+            background: #334155;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode .input-group label {
+            color: #cbd5e1;
+        }
+
         body.dark-mode .input-group select,
         body.dark-mode .input-group input,
-        body.dark-mode textarea { background-color: #2d3748; border-color: #4a5568; color: #e2e8f0; }
-        body.dark-mode .modal-content h3, body.dark-mode .modal-content h4 { color: #f1f5f9; }
-        body.dark-mode .modal-close-button { color: #94a3b8; }
+        body.dark-mode textarea {
+            background-color: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode .modal-content h3, body.dark-mode .modal-content h4 {
+             color: #f1f5f9;
+        }
+        
+        body.dark-mode .modal-close-button {
+             color: #94a3b8;
+        }
+        
         body.dark-mode .changes-list li, body.dark-mode .help-section details {
             background-color: #2d3748;
             border-color: #4a5568;
         }
-        body.dark-mode .help-section details { border-color: #4a5568; }
-        body.dark-mode .help-section div { border-top-color: #4a5568; }
+        
+        body.dark-mode .help-section details {
+            border-color: #4a5568;
+        }
+
+        body.dark-mode .help-section div {
+             border-top-color: #4a5568;
+        }
+
+
     </style>
 </head>
 <body>
+
     <div class="top-banner">
         <h1>Airwork Pay Calculator</h1>
         <div class="top-controls">
             <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
         </div>
     </div>
+
     <header>
         <p>A tool to estimate pilot pay based on the Airwork 2017 Enterprise Agreement.</p>
         <hr>
     </header>
+
     <main class="container">
-        <div class="input-grid">
-            <div class="input-group">
-                <label for="payPeriodStart">Pay Period Start</label>
-                <input type="date" id="payPeriodStart" />
-            </div>
-            <div class="input-group">
-                <label for="payPeriodEnd">Pay Period End</label>
-                <input type="date" id="payPeriodEnd" />
-            </div>
-        </div>
+        
         <div class="input-group">
             <label for="employmentType">Employment Type</label>
             <select id="employmentType" onchange="toggleMode()">
@@ -300,6 +392,7 @@
                 <option value="Casual">Casual</option>
             </select>
         </div>
+
         <div id="permanentInputs">
             <div class="input-grid">
                 <div class="input-group">
@@ -330,6 +423,7 @@
                 </div>
             </div>
         </div>
+        
         <div id="casualInputs" class="hidden">
              <div class="input-group">
                 <label for="casualRankSelect">Rank</label>
@@ -339,6 +433,8 @@
                 </select>
             </div>
         </div>
+
+
         <div class="roster-inputs" id="rosterInputsContainer">
             <div class="input-group" id="initialRosterGroup">
                 <label for="initialRosterInput">Initial Roster</label>
@@ -349,6 +445,7 @@
                 <textarea id="finalRosterInput" placeholder="Paste the final published roster text here..."></textarea>
             </div>
         </div>
+        
         <div class="help-section">
             <details>
                 <summary>Help with Copy & Paste from PDF</summary>
@@ -364,19 +461,27 @@
                 </div>
             </details>
         </div>
+        
         <div class="calculate-section">
             <button class="primary-button" onclick="runCalculation()">Calculate Pay</button>
         </div>
+        
     </main>
+
+    <!-- Results Modal -->
     <div id="resultsModal" class="modal-overlay">
         <div class="modal-content">
             <button class="modal-close-button" onclick="hideResultsModal()">&times;</button>
-            <div id="modal-results-content"></div>
+            <div id="modal-results-content">
+                <!-- Results will be dynamically inserted here -->
+            </div>
         </div>
     </div>
+    
     <script>
         // --- GLOBAL VARIABLES ---
         let calculationResults = {};
+
         // --- DATA CONSTANTS (EBA Rates) ---
         const EBA_DATA = {
             "Permanent": {
@@ -396,6 +501,7 @@
             "TrainingCaptainAllowance": 9800.00, // Per annum
             "SuperGuaranteeRate": 0.115 // As of July 2024
         };
+
         // --- UI FUNCTIONS ---
         function showResultsModal() { document.getElementById('resultsModal').style.display = 'flex'; }
         function hideResultsModal() { document.getElementById('resultsModal').style.display = 'none'; }
@@ -415,6 +521,7 @@
             document.getElementById('rosterInputsContainer').classList.toggle('casual-mode', isCasual);
             document.getElementById('finalRosterLabel').textContent = isCasual ? 'Roster' : 'Final Roster';
         }
+
         // --- ON PAGE LOAD ---
         window.onload = function() {
             const savedMode = localStorage.getItem('darkMode');
@@ -423,34 +530,41 @@
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
+            document.getElementById('initialRosterInput').value = `TimeMode Local time 1 / 2
+Roster
+(01MAY25 - 31MAY25)
+Kendell, Guy 0463AU BNE FO/73F
+17APR25 00:36 0463AU
+Date Des. Code LE CI Dep STD Arr STA CO BLH
+01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
+02 Fri DIL 0000 BNE 0000 BNE 2359 FO
+07 Wed PAX 0800 BNE 0900 MEL 1130 1200 FO
+HTL 0000 MEL 1200 MEL 0250+ FO
+08 Thu QF7282 F 0250 MEL 0350 PER 0605 0635 FO 04:15
+Crew: CP: Cowled, Clayton, FO: Kendell, Guy
+HTL 0000 PER 0635 PER 1710 FO
+17 Sat RDO 0000 BNE 0000 BNE 2359 FO`;
+            document.getElementById('finalRosterInput').value = `TimeMode Local time 1 / 2
+Roster
+(01MAY25 - 31MAY25)
+Kendell, Guy 0463AU BNE FO/73F
+25JUN25 00:53 0463AU
+Date Des. Code LE CI Dep STD Arr STA CO BLH
+01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
+02 Fri DIL 0000 BNE 0000 BNE 2359 FO
+07 Wed PAX 0905 BNE 1005 MEL 1230 1300 FO
+HTL 0000 MEL 1200 MEL 0250+ FO
+08 Thu QF7282 F 0250 MEL 0350 PER 0605 0635 FO 04:15
+Crew: CP: Cowled, Clayton, FO: Kendell, Guy
+HTL 0000 PER 0635 PER 1710 FO
+17 Sat QF7281 F 1710 PER 1810 MEL 2340 73P FO 03:57`;
+            
             document.getElementById('resultsModal').addEventListener('click', function(event) {
                 if (event.target === this) { hideResultsModal(); }
             });
         };
-        // --- DATE HELPERS ---
-        const MONTHS_MAP = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11 };
-        function parseDayToDate(dayStr, month, year) {
-            const day = parseInt(dayStr.split(' ')[0], 10);
-            return new Date(year, month, day);
-        }
-        function extractMonthYear(rosterText) {
-            const match = rosterText.match(/\((\d{2})([A-Z]{3})(\d{2})/);
-            if (!match) return { month: null, year: null };
-            const month = MONTHS_MAP[match[2]];
-            const year = 2000 + parseInt(match[3], 10);
-            return { month, year };
-        }
-        function filterDutyMapByPeriod(dutyMap, month, year, periodStart, periodEnd) {
-            const filtered = new Map();
-            dutyMap.forEach((duty, dayStr) => {
-                const dutyDate = parseDayToDate(dayStr, month, year);
-                if (dutyDate >= periodStart && dutyDate <= periodEnd) {
-                    filtered.set(dayStr, duty);
-                }
-            });
-            return filtered;
-        }
-        // --- ROSTER PARSING ---
+
+        // --- CALCULATION & PARSING LOGIC ---
         function parseTimeToHours(timeStr) {
             if (!timeStr || typeof timeStr !== 'string') return 0;
             timeStr = timeStr.replace(':', '');
@@ -459,6 +573,9 @@
             const minutes = parseInt(timeStr.substring(2, 4), 10);
             return hours + (minutes / 60);
         }
+        
+        const MONTHS_MAP = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11 };
+
         function getPublicationDate(rosterText) {
             const match = rosterText.match(/(\d{2})([A-Z]{3})(\d{2})\s+(\d{2}:\d{2})/);
             if (!match) return null;
@@ -471,6 +588,7 @@
             if (isNaN(day) || month === undefined || isNaN(year) || isNaN(hours) || isNaN(minutes)) return null;
             return new Date(year, month, day, hours, minutes);
         }
+
         function parseRoster(rosterText) {
             const dutyMap = new Map();
             const lines = rosterText.trim().split('\n');
@@ -494,11 +612,13 @@
             }
             return { dutyMap, rosterPeriod };
         }
+
         function processDayEntries(entries) {
             const firstLineParts = entries[0].trim().split(/\s+/);
             const dayInfo = { date: firstLineParts[0], dutyCode: firstLineParts[2], std: '0000', signOff: '0000', blockHours: 0, isLayover: false, isGroundDuty: false };
             let dutyStartTime = null, dutyEndTime = null;
             const groundDutyCodes = ['ADMIN', 'SIM'];
+            
             entries.forEach(line => {
                 if (groundDutyCodes.some(code => line.includes(code))) {
                     dayInfo.isGroundDuty = true;
@@ -514,6 +634,7 @@
             dayInfo.signOff = dutyEndTime || '0000';
             return dayInfo;
         }
+
         function compareRosters(initialRoster, finalRoster) {
             const changes = [];
             const buffer = 2.0;
@@ -540,6 +661,7 @@
             });
             return changes;
         }
+
         function calculatePermanentPay(finalRosterData, level, rank, detectedChanges) {
             const annualSalary = EBA_DATA.Permanent[rank]?.[level];
             if (!annualSalary) return { totalGrossPay: 0 };
@@ -564,6 +686,7 @@
             const totalGrossPay = monthlyBasePay + rosterChangeAllowance + mealAndLayoverAllowance + otherAllowances;
             return { monthlyBasePay, rosterChangeAllowance, mealAndLayoverAllowance, otherAllowances, superContribution, totalGrossPay };
         }
+
         function calculateCasualPay(finalRosterData, rank) {
             const casualRates = EBA_DATA.Casual[rank];
             let flightPay = 0, groundPay = 0, totalBlockHours = 0, groundDutyDays = 0;
@@ -580,6 +703,7 @@
             const superContribution = totalGrossPay * EBA_DATA.SuperGuaranteeRate;
             return { totalBlockHours, groundDutyDays, totalGrossPay, groundPay, flightPay, superContribution };
         }
+
         function calculateAllowances(finalRosterData) {
             let totalAllowance = 0, layoverDays = 0, mealDays = 0;
             finalRosterData.dutyMap.forEach(duty => {
@@ -597,15 +721,18 @@
             });
             return { totalAllowance, layoverDays, mealDays };
         }
+
         function updateModalContent() {
             const res = calculationResults;
             const contentDiv = document.getElementById('modal-results-content');
+            
             if (res.mode === 'Permanent') {
                 let changesHtml = '<h4>Detected Roster Changes</h4>';
                 if (res.detectedChanges.length > 0) {
                     changesHtml += '<ul class="changes-list">';
                     res.detectedChanges.forEach(change => {
-                        changesHtml += `<li><strong>${change.date}:</strong> ${change.description}</li>`;
+                        const month = res.rosterPeriod.start.substring(2,5) || 'Month';
+                        changesHtml += `<li><strong>${change.date} ${month}:</strong> ${change.description}</li>`;
                     });
                     changesHtml += '</ul>';
                 } else {
@@ -615,7 +742,7 @@
                     <h3>Pay Calculation Results (Permanent)</h3>
                     <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Pay Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
                         <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
                     </div><hr>${changesHtml}<hr>
                     <h4>Pay Component Breakdown (Monthly Estimate)</h4>
@@ -638,7 +765,7 @@
                     <h3>Pay Calculation Results (Casual)</h3>
                      <div class="results-grid">
                         <p class="label">Rank:</p><p>${res.finalRank}</p>
-                        <p class="label">Pay Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
+                        <p class="label">Roster Period:</p><p>${res.rosterPeriod ? `${res.rosterPeriod.start} - ${res.rosterPeriod.end}` : 'N/A'}</p>
                     </div><hr>
                     <h4>Pay Component Breakdown (Monthly Estimate)</h4>
                     <div class="results-grid">
@@ -657,65 +784,52 @@
                  contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
             }
         }
+
         function runCalculation() {
             const employmentType = document.getElementById('employmentType').value;
-            const periodStartVal = document.getElementById('payPeriodStart').value;
-            const periodEndVal = document.getElementById('payPeriodEnd').value;
-            if (!periodStartVal || !periodEndVal) {
-                alert("Please select both pay period start and end dates.");
-                return;
-            }
-            const periodStart = new Date(periodStartVal);
-            const periodEnd = new Date(periodEndVal);
-            if (periodEnd < periodStart) {
-                alert("Pay Period End must be after Start.");
-                return;
-            }
+            
             if(employmentType === 'Permanent') {
                 let initialRosterText = document.getElementById('initialRosterInput').value;
                 let finalRosterText = document.getElementById('finalRosterInput').value;
-                const { month, year } = extractMonthYear(finalRosterText);
-                const initialRosterData = parseRoster(initialRosterText);
-                const finalRosterData = parseRoster(finalRosterText);
-                const filteredInitialDutyMap = filterDutyMapByPeriod(initialRosterData.dutyMap, month, year, periodStart, periodEnd);
-                const filteredFinalDutyMap = filterDutyMapByPeriod(finalRosterData.dutyMap, month, year, periodStart, periodEnd);
-                const detectedChanges = compareRosters(filteredInitialDutyMap, filteredFinalDutyMap);
-                const filteredFinalRosterData = { ...finalRosterData, dutyMap: filteredFinalDutyMap };
+                const initialPubDate = getPublicationDate(initialRosterText);
+                const finalPubDate = getPublicationDate(finalRosterText);
+                if (initialPubDate && finalPubDate && initialPubDate > finalPubDate) {
+                    [initialRosterText, finalRosterText] = [finalRosterText, initialRosterText];
+                }
                 const rank = document.getElementById('rankSelect').value;
                 const level = document.getElementById('levelSelect').value;
-                const permanentPay = calculatePermanentPay(filteredFinalRosterData, level, rank, detectedChanges);
+                const initialRosterData = parseRoster(initialRosterText);
+                const finalRosterData = parseRoster(finalRosterText);
+                const detectedChanges = compareRosters(initialRosterData.dutyMap, finalRosterData.dutyMap);
+                const permanentPay = calculatePermanentPay(finalRosterData, level, rank, detectedChanges);
+
                 calculationResults = {
                     mode: 'Permanent',
                     finalRank: rank,
                     annualSalary: EBA_DATA.Permanent[rank]?.[level],
                     ...permanentPay,
                     detectedChanges,
-                    rosterPeriod: {
-                        start: periodStart.toLocaleDateString(),
-                        end: periodEnd.toLocaleDateString()
-                    }
+                    rosterPeriod: finalRosterData.rosterPeriod
                 };
+
             } else { // Casual
                 const finalRosterText = document.getElementById('finalRosterInput').value;
-                const { month, year } = extractMonthYear(finalRosterText);
                 const finalRosterData = parseRoster(finalRosterText);
-                const filteredFinalDutyMap = filterDutyMapByPeriod(finalRosterData.dutyMap, month, year, periodStart, periodEnd);
-                const filteredFinalRosterData = { ...finalRosterData, dutyMap: filteredFinalDutyMap };
                 const rank = document.getElementById('casualRankSelect').value;
-                const casualPay = calculateCasualPay(filteredFinalRosterData, rank);
+                const casualPay = calculateCasualPay(finalRosterData, rank);
+
                 calculationResults = {
                     mode: 'Casual',
                     finalRank: rank,
                     ...casualPay,
-                    rosterPeriod: {
-                        start: periodStart.toLocaleDateString(),
-                        end: periodEnd.toLocaleDateString()
-                    }
+                     rosterPeriod: finalRosterData.rosterPeriod
                 };
             }
+            
             updateModalContent();
             showResultsModal();
         }
+
     </script>
 </body>
 </html>
