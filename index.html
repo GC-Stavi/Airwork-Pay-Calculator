@@ -71,6 +71,57 @@
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             border-radius: 12px;
         }
+        
+        /* --- Form & Input Styles --- */
+        .input-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .input-group select, .input-group input {
+            width: 100%;
+            padding: 0.8em;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 1em;
+            background-color: #f8fafc;
+        }
+
+        textarea#rosterInput {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            padding: 1em;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            resize: vertical;
+            font-size: 14px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .calculate-section {
+            display: flex;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        #results-container {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
 
         /* --- Buttons & Controls --- */
         .top-controls {
@@ -93,10 +144,14 @@
         button.primary-button {
             background: linear-gradient(to right, #4f46e5, #7c3aed);
             color: #ffffff;
+            font-size: 1.1em;
+            padding: 0.9em 2em;
         }
         
         button.primary-button:hover {
             opacity: 0.9;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
         
         .dark-toggle-btn {
@@ -131,57 +186,285 @@
             background: #334155;
             color: #e2e8f0;
         }
+        
+        body.dark-mode .input-group label {
+            color: #cbd5e1;
+        }
+
+        body.dark-mode .input-group select,
+        body.dark-mode .input-group input,
+        body.dark-mode textarea#rosterInput {
+            background-color: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        body.dark-mode #results-container {
+             background-color: #2d3748;
+             border-color: #4a5568;
+        }
+
 
     </style>
 </head>
 <body>
 
-    <!-- Top decorative banner -->
     <div class="top-banner">
         <h1>Airwork Pay Calculator</h1>
     </div>
 
-    <!-- Top right controls, e.g., Dark Mode toggle -->
     <div class="top-controls">
         <button class="dark-toggle-btn" onclick="toggleDarkMode()" id="darkModeBtn">Dark Mode</button>
     </div>
 
-    <!-- Main header with introduction -->
     <header>
         <p>A tool to estimate pilot pay based on the Airwork 2017 Enterprise Agreement.</p>
         <hr>
     </header>
 
-    <!-- Main content area -->
     <main class="container">
-        <!-- Content will be added here in the next steps -->
-        <p>Calculator content will go here.</p>
+        
+        <div class="input-grid">
+            <div class="input-group">
+                <label for="rankSelect">Rank</label>
+                <select id="rankSelect">
+                    <option value="First Officer">First Officer</option>
+                    <option value="Captain">Captain</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="levelSelect">Pay Level</label>
+                <select id="levelSelect">
+                    <option value="1">Level 1 (1-3 Yrs)</option>
+                    <option value="2">Level 2 (4 Yrs)</option>
+                    <option value="3">Level 3 (5 Yrs)</option>
+                    <option value="4">Level 4 (6 Yrs)</option>
+                    <option value="5">Level 5 (7 Yrs)</option>
+                    <option value="6">Level 6 (8+ Yrs)</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label for="rosterInput">Paste Roster Text</label>
+            <textarea id="rosterInput" placeholder="Paste the full text from your roster PDF here..."></textarea>
+        </div>
+        
+        <div class="calculate-section">
+            <button class="primary-button" onclick="runCalculation()">Calculate Pay</button>
+        </div>
+        
+        <div id="results-container">
+            <p>Your calculated pay details will appear here.</p>
+        </div>
+
     </main>
     
     <script>
+        // --- DATA CONSTANTS (EBA Rates) ---
+        // These are the recalculated rates based on our previous discussion.
+        const EBA_DATA = {
+            "First Officer": {
+                1: 134645.51, 2: 140812.55, 3: 147931.28, 
+                4: 153524.47, 5: 160049.07, 6: 167370.08
+            },
+            "Captain": {
+                1: 213689.97, 2: 219975.39, 3: 227532.08, 
+                4: 236339.95, 5: 246400.17, 6: 255208.04
+            },
+            "ProductivityBonus": {
+                "First Officer": 227.83,
+                "Captain": 355.79
+            }
+        };
+
+
         // --- DARK MODE LOGIC ---
-        // This function toggles the 'dark-mode' class on the body
         function toggleDarkMode() {
             const body = document.body;
             const btn = document.getElementById('darkModeBtn');
             const isDark = body.classList.toggle('dark-mode');
             btn.textContent = isDark ? 'Light Mode' : 'Dark Mode';
-            // Save the user's preference in localStorage
             localStorage.setItem('darkMode', isDark ? 'dark' : 'light');
         }
 
         // --- ON PAGE LOAD ---
-        // This function checks for a saved preference or system preference for dark mode
         window.onload = function() {
             const savedMode = localStorage.getItem('darkMode');
-            // Check if the user's OS is set to dark mode
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             
             if (savedMode === 'dark' || (!savedMode && prefersDark)) {
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
+            
+            // Auto-populate roster text for demonstration
+            document.getElementById('rosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
+Name EmpNo Shortcode EMail BRQ
+guy.kendell@airworkgroup.com
+Date Des. Code LE CI Dep STD Arr STA CO BLH
+STC
+AC WA Func Rank
+01 Sun RDO 0000 BNE 0000 BNE 2359 FO
+02 Mon ADMIN 0900 BNE 0900 BNE 1700 1700 FO
+03 Tue PAX 1750 BNE 1850 MEL 2120 2150 FO
+HTL 0000 MEL 2150 MEL 1845+ FO
+04 Wed QF7391 F 1845 MEL 1945 SYD 2105 FO 01:18
+Crew: CP(Y,X): Gencic, Darko, FO: Kendell, Guy
+73P
+Y,X QF7392 F 0000 SYD 2200 MEL 2325 FO 01:29
+Crew: CP: Gencic, Darko, FO(Y,X): Kendell, Guy
+73P
+05 Thu Y,X QF7394 F 0000 MEL 0030 PER 0235 0305 FO 04:12
+Crew: CP: Gencic, Darko, FO(Y,X): Kendell, Guy
+73P
+HTL 0000 PER 0345 PER 1610 FO
+QF7399 F 1620 PER 1720 MEL 2250 2236 FO 03:35
+Crew: CP(Y,X): Gencic, Darko, FO: Kendell, Guy
+73P
+HTL 0000 MEL 2310 MEL 1020+ FO
+06 Fri PIOT 0000 MEL 1020 BNE 1235 FO
+07 Sat RDO 0000 BNE 0000 BNE 2359 FO
+19 Thu QF7287 F 0000 LST 0210 MEL 0310 FO 00:56
+Crew: CP(Y,X): Scott, William, FO: Kendell, Guy
+73P
+PAX 0000 MEL 0600 BNE 0815 0845 FO`;
         };
+
+        // --- CALCULATION LOGIC ---
+
+        /**
+         * Parses the raw text from the roster input.
+         * @param {string} rosterText - The full text pasted by the user.
+         * @returns {object} An object containing parsed data like rank, home base, and flight duties.
+         */
+        function parseRoster(rosterText) {
+            const lines = rosterText.trim().split('\n');
+            const parsedData = {
+                rank: null,
+                homeBase: null,
+                duties: []
+            };
+
+            // Find header line to extract Home Base from the pilot's info line
+            const pilotInfoLine = lines.find(line => line.includes('BNE FO/73F') || line.includes('MEL CP/73F'));
+            if (pilotInfoLine) {
+                const baseMatch = pilotInfoLine.match(/(BNE|MEL|SYD|PER)/);
+                if (baseMatch) {
+                    parsedData.homeBase = baseMatch[0];
+                }
+            }
+            
+            // Regex to identify if a string is in HH:MM format
+            const timeRegex = /^\d{2}:\d{2}$/;
+
+            // Filter for lines that are actual roster entries (start with a day number and day name)
+            const dutyLines = lines.filter(line => /^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim()));
+
+            dutyLines.forEach(line => {
+                const parts = line.trim().split(/\s+/); // Split by one or more spaces
+                
+                if (parts.length < 3) return; // Skip malformed or irrelevant lines
+
+                const lastPart = parts[parts.length - 1];
+                const secondLastPart = parts[parts.length - 2];
+                
+                let rankOnLine = null;
+                let blockHoursOnLine = 0;
+
+                // Check if the last part is time (Block Hours)
+                if (timeRegex.test(lastPart)) {
+                    const timeParts = lastPart.split(':');
+                    const hours = parseInt(timeParts[0], 10);
+                    const minutes = parseInt(timeParts[1], 10);
+                    blockHoursOnLine = hours + (minutes / 60);
+
+                    // If BLH exists, rank is the part before it
+                    rankOnLine = secondLastPart;
+                } else {
+                    // If last part is not time, it's potentially the rank, and BLH is 0
+                    rankOnLine = lastPart;
+                }
+
+                // Standardize and set the rank for the entire roster (if not already set)
+                if (!parsedData.rank && rankOnLine) {
+                    const upperRank = rankOnLine.toUpperCase();
+                    if (upperRank === 'FO') {
+                        parsedData.rank = 'First Officer';
+                    } else if (upperRank === 'CPT' || upperRank === 'CAP') {
+                        parsedData.rank = 'Captain';
+                    }
+                }
+                
+                // Add duty with block hours to the list if they are greater than zero
+                if (blockHoursOnLine > 0) {
+                    parsedData.duties.push({ blockHours: blockHoursOnLine });
+                }
+            });
+
+            return parsedData;
+        }
+
+        /**
+         * Main function to trigger the calculation process.
+         */
+        function runCalculation() {
+            // 1. Get user inputs from the dropdowns
+            const selectedRankByUser = document.getElementById('rankSelect').value;
+            const level = document.getElementById('levelSelect').value;
+            const rosterText = document.getElementById('rosterInput').value;
+            const resultsContainer = document.getElementById('results-container');
+
+            // 2. Parse the roster text to extract data
+            const rosterData = parseRoster(rosterText);
+
+            // 3. Determine the final rank to use for calculations
+            // Priority: 1. Rank from roster text. 2. User selection from dropdown.
+            const finalRank = rosterData.rank || selectedRankByUser;
+
+            // Auto-select dropdown to match the detected rank for clarity
+            if(rosterData.rank) {
+                document.getElementById('rankSelect').value = rosterData.rank;
+            }
+
+            // 4. Perform salary and bonus calculations
+            const annualSalary = EBA_DATA[finalRank]?.[level];
+            
+            if (!annualSalary) {
+                resultsContainer.innerHTML = '<p>Error: Could not find a salary for the selected rank and level.</p>';
+                return;
+            }
+            
+            // Calculate total block hours from all parsed duties
+            const totalBlockHours = rosterData.duties.reduce((sum, duty) => sum + duty.blockHours, 0);
+
+            // Calculate Productivity Bonus based on the 60-hour threshold
+            let productivityBonus = 0;
+            const bonusThreshold = 60; // As per Appendix B of the EBA
+            if (totalBlockHours > bonusThreshold) {
+                const bonusHours = totalBlockHours - bonusThreshold;
+                const bonusRate = EBA_DATA.ProductivityBonus[finalRank];
+                productivityBonus = bonusHours * bonusRate;
+            }
+
+            // 5. Display the formatted results
+            const fortnightlyBasePay = (annualSalary / 365.25) * 14;
+
+            resultsContainer.innerHTML = `
+                <h3>Pay Calculation Results</h3>
+                <p><strong>Rank:</strong> ${finalRank}</p>
+                <p><strong>Home Base:</strong> ${rosterData.homeBase || 'N/A'}</p>
+                <p><strong>Annual Salary:</strong> $${annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                <hr>
+                <p><strong>Estimated Fortnightly Base Pay:</strong> $${fortnightlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                <p><strong>Total Block Hours Detected:</strong> ${totalBlockHours.toFixed(2)}</p>
+                <p><strong>Productivity Bonus (Over 60hrs):</strong> $${productivityBonus.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                <hr>
+                <h4>Estimated Total Fortnightly Gross Pay:</h4>
+                <p style="font-size: 1.5em; font-weight: bold; color: #16a34a;">$${(fortnightlyBasePay + productivityBonus).toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+            `;
+        }
+
     </script>
 </body>
 </html>
