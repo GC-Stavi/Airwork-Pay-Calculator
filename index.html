@@ -460,6 +460,7 @@
 Roster
 (01MAY25 - 31MAY25)
 Kendell, Guy 0463AU BNE FO/73F
+17APR25 00:36 0463AU
 Date Des. Code LE CI Dep STD Arr STA CO BLH
 01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
 02 Fri DIL 0000 BNE 0000 BNE 2359 FO
@@ -471,6 +472,7 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
 Roster
 (01MAY25 - 31MAY25)
 Kendell, Guy 0463AU BNE FO/73F
+25JUN25 00:53 0463AU
 Date Des. Code LE CI Dep STD Arr STA CO BLH
 01 Thu ADMIN 0900 BNE 0900 BNE 1700 1700 FO
 02 Fri DIL 0000 BNE 0000 BNE 2359 FO
@@ -493,20 +495,39 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
             const minutes = parseInt(timeStr.substring(2, 4), 10);
             return hours + (minutes / 60);
         }
+        
+        const MONTHS_MAP = { 'JAN': 0, 'FEB': 1, 'MAR': 2, 'APR': 3, 'MAY': 4, 'JUN': 5, 'JUL': 6, 'AUG': 7, 'SEP': 8, 'OCT': 9, 'NOV': 10, 'DEC': 11 };
+
+        function getPublicationDate(rosterText) {
+            const match = rosterText.match(/(\d{2})([A-Z]{3})(\d{2})\s+(\d{2}:\d{2})/);
+            if (!match) return null;
+
+            const day = parseInt(match[1], 10);
+            const month = MONTHS_MAP[match[2]];
+            const year = 2000 + parseInt(match[3], 10);
+            const timeParts = match[4].split(':');
+            const hours = parseInt(timeParts[0], 10);
+            const minutes = parseInt(timeParts[1], 10);
+
+            if (isNaN(day) || month === undefined || isNaN(year) || isNaN(hours) || isNaN(minutes)) {
+                return null;
+            }
+
+            return new Date(year, month, day, hours, minutes);
+        }
+
 
         function parseRoster(rosterText) {
             const dutyMap = new Map();
             const lines = rosterText.trim().split('\n');
             let rosterPeriod = null;
 
-            // Find roster period from the header
             const dateRangeRegex = /\((\d{2}[A-Z]{3}\d{2})\s*-\s*(\d{2}[A-Z]{3}\d{2})\)/;
             const rangeMatch = rosterText.match(dateRangeRegex);
             if (rangeMatch) {
                 rosterPeriod = { start: rangeMatch[1], end: rangeMatch[2] };
             }
 
-            // Find all lines that represent a daily duty entry
             const dutyLines = lines.filter(line => /^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim()));
 
             dutyLines.forEach(line => {
@@ -597,7 +618,6 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
             if (res.detectedChanges.length > 0) {
                 changesHtml += '<ul class="changes-list">';
                 res.detectedChanges.forEach(change => {
-                    // Use the extracted month from the roster period for display
                     const month = res.rosterPeriod.start.substring(2,5) || 'Month';
                     changesHtml += `<li><strong>${change.date} ${month}:</strong> ${change.description}</li>`;
                 });
@@ -631,8 +651,19 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
         function runCalculation() {
             const selectedRankByUser = document.getElementById('rankSelect').value;
             const level = document.getElementById('levelSelect').value;
-            const initialRosterText = document.getElementById('initialRosterInput').value;
-            const finalRosterText = document.getElementById('finalRosterInput').value;
+            
+            let initialRosterText = document.getElementById('initialRosterInput').value;
+            let finalRosterText = document.getElementById('finalRosterInput').value;
+
+            // --- Smart Swap Logic ---
+            const initialPubDate = getPublicationDate(initialRosterText);
+            const finalPubDate = getPublicationDate(finalRosterText);
+
+            if (initialPubDate && finalPubDate && initialPubDate > finalPubDate) {
+                // If initial roster's date is later, they are swapped. Swap them back.
+                [initialRosterText, finalRosterText] = [finalRosterText, initialRosterText];
+            }
+            // --- End Smart Swap ---
             
             const initialRosterData = parseRoster(initialRosterText);
             const finalRosterData = parseRoster(finalRosterText);
@@ -666,7 +697,7 @@ Date Des. Code LE CI Dep STD Arr STA CO BLH
                 allowancePay,
                 totalGrossPay,
                 detectedChanges,
-                rosterPeriod: finalRosterData.rosterPeriod // Use period from final roster
+                rosterPeriod: finalRosterData.rosterPeriod
             };
             
             updateModalContent();
