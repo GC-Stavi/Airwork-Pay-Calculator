@@ -73,6 +73,13 @@
         }
         
         /* --- Form & Input Styles --- */
+        .roster-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-top: 1.5rem;
+        }
+
         .input-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -96,7 +103,7 @@
             background-color: #f8fafc;
         }
 
-        textarea#rosterInput {
+        textarea {
             width: 100%;
             height: 200px;
             font-family: monospace;
@@ -105,13 +112,12 @@
             border-radius: 8px;
             resize: vertical;
             font-size: 14px;
-            margin-bottom: 1.5rem;
         }
         
         .calculate-section {
             display: flex;
             justify-content: center;
-            margin-top: 1rem;
+            margin-top: 1.5rem;
         }
 
         /* --- Buttons & Controls --- */
@@ -169,9 +175,11 @@
             padding: 2em;
             border-radius: 12px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
-            max-width: 700px;
+            max-width: 800px;
             width: 90%;
             position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         .modal-close-button {
@@ -202,12 +210,17 @@
         
         .results-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
+            grid-template-columns: auto 1fr;
+            gap: 0.5rem 1.5rem;
+            align-items: center;
         }
         
         .results-grid p {
             margin: 0.5rem 0;
+        }
+        
+        .results-grid .label {
+            font-weight: 600;
         }
         
         .total-pay-section {
@@ -219,6 +232,19 @@
             font-size: 1.6em;
             font-weight: bold;
             color: #16a34a;
+        }
+        
+        .changes-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+        .changes-list li {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-left: 4px solid #f59e0b; /* Amber color for changes */
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 6px;
         }
         
         /* --- DARK MODE STYLES --- */
@@ -255,7 +281,7 @@
 
         body.dark-mode .input-group select,
         body.dark-mode .input-group input,
-        body.dark-mode textarea#rosterInput {
+        body.dark-mode textarea {
             background-color: #2d3748;
             border-color: #4a5568;
             color: #e2e8f0;
@@ -267,6 +293,12 @@
         
         body.dark-mode .modal-close-button {
              color: #94a3b8;
+        }
+        
+        body.dark-mode .changes-list li {
+            background-color: #2d3748;
+            border-color: #4a5568;
+            border-left-color: #f59e0b;
         }
 
     </style>
@@ -309,9 +341,15 @@
             </div>
         </div>
 
-        <div class="input-group">
-            <label for="rosterInput">Paste Roster Text</label>
-            <textarea id="rosterInput" placeholder="Paste the full text from your roster PDF here..."></textarea>
+        <div class="roster-inputs">
+            <div class="input-group">
+                <label for="initialRosterInput">Initial Roster</label>
+                <textarea id="initialRosterInput" placeholder="Paste the initial roster text here..."></textarea>
+            </div>
+            <div class="input-group">
+                <label for="finalRosterInput">Final Roster</label>
+                <textarea id="finalRosterInput" placeholder="Paste the final published roster text here..."></textarea>
+            </div>
         </div>
         
         <div class="calculate-section">
@@ -337,32 +375,19 @@
         // --- DATA CONSTANTS (EBA Rates) ---
         const EBA_DATA = {
             "First Officer": {
-                1: 134645.51, 2: 140812.55, 3: 147931.28, 
-                4: 153524.47, 5: 160049.07, 6: 167370.08
+                1: 134645.51, 2: 140812.55, 3: 147931.28, 4: 153524.47, 5: 160049.07, 6: 167370.08
             },
             "Captain": {
-                1: 213689.97, 2: 219975.39, 3: 227532.08, 
-                4: 236339.95, 5: 246400.17, 6: 255208.04
+                1: 213689.97, 2: 219975.39, 3: 227532.08, 4: 236339.95, 5: 246400.17, 6: 255208.04
             },
-            "ProductivityBonus": {
-                "First Officer": 227.83,
-                "Captain": 355.79
-            },
-            "OvertimeRate": {
-                "First Officer": 78.00,
-                "Captain": 120.00
-            }
+            "ProductivityBonus": { "First Officer": 227.83, "Captain": 355.79 },
+            "OvertimeRate": { "First Officer": 78.00, "Captain": 120.00 },
+            "ExtendedDutyRate": { "First Officer": 178.07, "Captain": 277.78 } // Same as RDO Worked Rate
         };
 
-        // --- UI FUNCTIONS (MODAL & DARK MODE) ---
-        function showResultsModal() {
-            document.getElementById('resultsModal').style.display = 'flex';
-        }
-
-        function hideResultsModal() {
-            document.getElementById('resultsModal').style.display = 'none';
-        }
-
+        // --- UI FUNCTIONS ---
+        function showResultsModal() { document.getElementById('resultsModal').style.display = 'flex'; }
+        function hideResultsModal() { document.getElementById('resultsModal').style.display = 'none'; }
         function toggleDarkMode() {
             const body = document.body;
             const btn = document.getElementById('darkModeBtn');
@@ -375,54 +400,39 @@
         window.onload = function() {
             const savedMode = localStorage.getItem('darkMode');
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-            
             if (savedMode === 'dark' || (!savedMode && prefersDark)) {
                 document.body.classList.add('dark-mode');
                 document.getElementById('darkModeBtn').textContent = 'Light Mode';
             }
-            
-            document.getElementById('rosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
-Name EmpNo Shortcode EMail BRQ
-guy.kendell@airworkgroup.com
+            document.getElementById('initialRosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
 Date Des. Code LE CI Dep STD Arr STA CO BLH
-STC
-AC WA Func Rank
-01 Sun RDO 0000 BNE 0000 BNE 2359 FO
-02 Mon ADMIN 0900 BNE 0900 BNE 1700 1700 FO
-03 Tue PAX 1750 BNE 1850 MEL 2120 2150 FO
-HTL 0000 MEL 2150 MEL 1845+ FO
-04 Wed QF7391 F 1845 MEL 1945 SYD 2105 FO 01:18
-Crew: CP(Y,X): Gencic, Darko, FO: Kendell, Guy
-73P
-Y,X QF7392 F 0000 SYD 2200 MEL 2325 FO 01:29
-Crew: CP: Gencic, Darko, FO(Y,X): Kendell, Guy
-73P
-05 Thu Y,X QF7394 F 0000 MEL 0030 PER 0235 0305 FO 04:12
-Crew: CP: Gencic, Darko, FO(Y,X): Kendell, Guy
-73P
-HTL 0000 PER 0345 PER 1610 FO
-QF7399 F 1620 PER 1720 MEL 2250 2236 FO 03:35
-Crew: CP(Y,X): Gencic, Darko, FO: Kendell, Guy
-73P
-HTL 0000 MEL 2310 MEL 1020+ FO
-06 Fri PIOT 0000 MEL 1020 BNE 1235 FO
-07 Sat RDO 0000 BNE 0000 BNE 2359 FO
-19 Thu QF7287 F 0000 LST 0210 MEL 0310 FO 00:56
-Crew: CP(Y,X): Scott, William, FO: Kendell, Guy
-73P
-PAX 0000 MEL 0600 BNE 0815 0845 FO`;
+01 Thu ADMIN BNE 0900 BNE 1700 1700 FO
+02 Fri DIL BNE 0000 BNE 2359 FO
+03 Sat RDO BNE 0000 BNE 2359 FO
+04 Sun RDO BNE 0000 BNE 2359 FO
+07 Wed PAX 0800 BNE 0900 MEL 1130 1200 FO
+14 Wed PAX 1325 MEL 1425 BNE 1640 1710 FO
+17 Sat RDO BNE 0000 BNE 2359 FO
+18 Sun RDO BNE 0000 BNE 2359 FO`;
+            document.getElementById('finalRosterInput').value = `Kendell, Guy 0463AU BNE FO/73F
+Date Des. Code LE CI Dep STD Arr STA CO BLH
+01 Thu ADMIN BNE 0900 BNE 1700 1700 FO
+02 Fri DIL BNE 0000 BNE 2359 FO
+03 Sat RDO BNE 0000 BNE 2359 FO
+04 Sun RDO BNE 0000 BNE 2359 FO
+07 Wed PAX 0905 BNE 1005 MEL 1230 1300 FO
+14 Wed QF7286 F 2340 MEL 0040 LST 0140 73P FO 01:12
+17 Sat PAX 0905 BNE 1105 SIN 1725 1825 FO
+18 Sun QF7281 F 1710 PER 1810 MEL 2340 73P FO 03:57`;
             
-            // Close modal if user clicks outside of the content
             document.getElementById('resultsModal').addEventListener('click', function(event) {
-                if (event.target === this) {
-                    hideResultsModal();
-                }
+                if (event.target === this) { hideResultsModal(); }
             });
         };
 
         // --- CALCULATION & PARSING LOGIC ---
         function parseTimeToHours(timeStr) {
-            if (!timeStr) return 0;
+            if (!timeStr || typeof timeStr !== 'string') return 0;
             timeStr = timeStr.replace(':', '');
             if (timeStr.length < 4) return 0;
             const hours = parseInt(timeStr.substring(0, 2), 10);
@@ -431,133 +441,155 @@ PAX 0000 MEL 0600 BNE 0815 0845 FO`;
         }
 
         function parseRoster(rosterText) {
+            const dutyMap = new Map();
             const lines = rosterText.trim().split('\n');
-            const parsedData = { rank: null, homeBase: null, duties: [] };
-            const pilotInfoLine = lines.find(line => line.includes('BNE FO/73F') || line.includes('MEL CP/73F'));
-            if (pilotInfoLine) {
-                const baseMatch = pilotInfoLine.match(/(BNE|MEL|SYD|PER)/);
-                if (baseMatch) parsedData.homeBase = baseMatch[0];
-            }
-            const timeRegex = /^\d{2}:\d{2}$/;
             const dutyLines = lines.filter(line => /^\d{2}\s+(Sun|Mon|Tue|Wed|Thu|Fri|Sat)/.test(line.trim()));
+
             dutyLines.forEach(line => {
                 const parts = line.trim().split(/\s+/);
                 if (parts.length < 3) return;
+
+                const date = parts[0];
                 const dutyCode = parts[2];
-                let dutyHours = 0;
-                if (dutyCode === 'ADMIN') {
-                    const startTime = parseTimeToHours(parts[3]);
-                    const endTime = parseTimeToHours(parts[7]);
-                    if (endTime > startTime) dutyHours = endTime - startTime;
-                } else if (dutyCode.startsWith('QF')) {
-                    const startTime = parseTimeToHours(parts[6]); // STD
-                    const endTime = parseTimeToHours(parts[8]); // STA
-                    if (endTime > startTime) dutyHours = endTime - startTime;
+                let std = '0000';
+                let blockHours = 0.0;
+                
+                if (dutyCode.startsWith('QF') || dutyCode.startsWith('AWK')) {
+                     // Flight duty: STD is usually the 6th element if Dep is present, or 5th otherwise
+                    std = parts.includes("PER") || parts.includes("MEL") || parts.includes("SYD") ? parts[parts.indexOf("MEL") + 1] || parts[parts.indexOf("PER") + 1] || parts[parts.indexOf("SYD") + 1] || '0000' : '0000';
+                    const lastPart = parts[parts.length - 1];
+                     if (/^\d{2}:\d{2}$/.test(lastPart)) {
+                        blockHours = parseTimeToHours(lastPart);
+                    }
+                } else if (dutyCode === 'ADMIN' || dutyCode === 'PAX') {
+                    std = parts[4]; // STD is typically the 5th element
                 }
-                const lastPart = parts[parts.length - 1];
-                let rankOnLine = null, blockHours = 0;
-                if (timeRegex.test(lastPart)) {
-                    blockHours = parseTimeToHours(lastPart);
-                    rankOnLine = parts[parts.length - 2];
-                } else {
-                    rankOnLine = lastPart;
-                }
-                if (!parsedData.rank && rankOnLine) {
-                    const upperRank = rankOnLine.toUpperCase();
-                    if (upperRank === 'FO') parsedData.rank = 'First Officer';
-                    else if (upperRank === 'CPT' || upperRank === 'CAP') parsedData.rank = 'Captain';
-                }
-                parsedData.duties.push({ dutyCode, dutyHours, blockHours });
+
+                dutyMap.set(date, { date, dutyCode, std, blockHours });
             });
-            return parsedData;
+            return dutyMap;
         }
-        
+
+        function compareRosters(initialRoster, finalRoster) {
+            const changes = [];
+            const buffer = 2.0; // 2-hour buffer as per EBA 13.4
+
+            finalRoster.forEach((finalDuty, date) => {
+                const initialDuty = initialRoster.get(date);
+                if (!initialDuty) {
+                    changes.push({ date, type: "NEW_DUTY", description: `New duty '${finalDuty.dutyCode}' added.` });
+                    return;
+                }
+
+                // Check for RDO Worked
+                if (initialDuty.dutyCode === 'RDO' && finalDuty.dutyCode !== 'RDO') {
+                    changes.push({ 
+                        date, 
+                        type: "RDO_WORKED", 
+                        description: `RDO changed to ${finalDuty.dutyCode}.`,
+                        hours: finalDuty.blockHours > 0 ? Math.max(3, finalDuty.blockHours) : 8 // Assume 8 hrs for non-flying
+                    });
+                }
+                // Check for change outside buffer
+                else if (initialDuty.dutyCode !== 'RDO' && finalDuty.dutyCode !== 'RDO') {
+                    const initialTime = parseTimeToHours(initialDuty.std);
+                    const finalTime = parseTimeToHours(finalDuty.std);
+                    const timeDiff = Math.abs(initialTime - finalTime);
+
+                    if (timeDiff > buffer) {
+                         changes.push({ 
+                            date, 
+                            type: "OUTSIDE_BUFFER", 
+                            description: `Duty '${finalDuty.dutyCode}' start time changed by ${timeDiff.toFixed(2)} hrs.`,
+                            hours: finalDuty.blockHours
+                        });
+                    }
+                }
+            });
+            return changes;
+        }
+
         function updateModalContent() {
             const res = calculationResults;
             const contentDiv = document.getElementById('modal-results-content');
-            
-            if(!res.annualSalary) {
+            if (!res.annualSalary) {
                 contentDiv.innerHTML = '<h3>Error</h3><p>Could not calculate pay. Please check inputs.</p>';
                 return;
+            }
+
+            let changesHtml = '<h4>Detected Roster Changes</h4>';
+            if (res.detectedChanges.length > 0) {
+                changesHtml += '<ul class="changes-list">';
+                res.detectedChanges.forEach(change => {
+                    changesHtml += `<li><strong>${change.date} May:</strong> ${change.description}</li>`;
+                });
+                changesHtml += '</ul>';
+            } else {
+                changesHtml += '<p>No pay-relevant changes detected between rosters.</p>';
             }
 
             contentDiv.innerHTML = `
                 <h3>Pay Calculation Results</h3>
                 <div class="results-grid">
-                    <p><strong>Rank:</strong></p><p>${res.finalRank}</p>
-                    <p><strong>Home Base:</strong></p><p>${res.homeBase || 'N/A'}</p>
-                    <p><strong>Annual Salary:</strong></p><p>$${res.annualSalary.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <p class="label">Rank:</p><p>${res.finalRank}</p>
+                    <p class="label">Annual Salary:</p><p>$${res.annualSalary.toLocaleString('en-AU', {f:2,M:2})}</p>
                 </div>
                 <hr>
-                <h4>Pay Component Breakdown (Fortnightly Estimate)</h4>
-                 <div class="results-grid">
-                    <p>Base Pay:</p><p>$${res.fortnightlyBasePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                    <p>Productivity Bonus (${res.bonusHours.toFixed(2)} hrs):</p><p>$${res.productivityBonus.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                    <p>Overtime Pay (${res.overtimeHours.toFixed(2)} hrs):</p><p>$${res.overtimePay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
-                </div>
+                ${changesHtml}
                 <hr>
-                <h4>Totals</h4>
+                <h4>Pay Component Breakdown (Monthly Estimate)</h4>
                 <div class="results-grid">
-                    <p><strong>Total Block Hours:</strong></p><p>${res.totalBlockHours.toFixed(2)}</p>
-                    <p><strong>Total Duty Hours:</strong></p><p>${res.totalDutyHours.toFixed(2)}</p>
+                    <p class="label">Base Pay:</p><p>$${res.monthlyBasePay.toLocaleString('en-AU', {f:2,M:2})}</p>
+                    <p class="label">Allowances (RDO/Buffer):</p><p>$${res.allowancePay.toLocaleString('en-AU', {f:2,M:2})}</p>
                 </div>
                 <div class="total-pay-section">
-                    <h4>Estimated Total Fortnightly Gross Pay:</h4>
-                    <p>$${res.totalGrossPay.toLocaleString('en-AU', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</p>
+                    <h4>Estimated Total Monthly Gross Pay:</h4>
+                    <p>$${res.totalGrossPay.toLocaleString('en-AU', {f:2,M:2})}</p>
                 </div>
             `;
         }
 
-        /**
-         * Main function to trigger the calculation process.
-         */
         function runCalculation() {
             const selectedRankByUser = document.getElementById('rankSelect').value;
             const level = document.getElementById('levelSelect').value;
-            const rosterText = document.getElementById('rosterInput').value;
+            const initialRosterText = document.getElementById('initialRosterInput').value;
+            const finalRosterText = document.getElementById('finalRosterInput').value;
             
-            const rosterData = parseRoster(rosterText);
-            const finalRank = rosterData.rank || selectedRankByUser;
-            if(rosterData.rank) document.getElementById('rankSelect').value = finalRank;
-
+            const initialRoster = parseRoster(initialRosterText);
+            const finalRoster = parseRoster(finalRosterText);
+            const detectedChanges = compareRosters(initialRoster, finalRoster);
+            
+            // For now, let's assume the rank from user selection is primary
+            const finalRank = selectedRankByUser;
             const annualSalary = EBA_DATA[finalRank]?.[level];
+
             if (!annualSalary) {
                 calculationResults = { annualSalary: null };
                 updateModalContent();
                 showResultsModal();
                 return;
             }
-            
-            const totalBlockHours = rosterData.duties.reduce((sum, duty) => sum + duty.blockHours, 0);
-            const totalDutyHours = rosterData.duties.reduce((sum, duty) => sum + duty.dutyHours, 0);
 
-            const bonusThreshold = 60;
-            const bonusHours = Math.max(0, totalBlockHours - bonusThreshold);
-            const productivityBonus = bonusHours * (EBA_DATA.ProductivityBonus[finalRank] || 0);
-            
-            const overtimeThreshold = 84;
-            const overtimeHours = Math.max(0, totalDutyHours - overtimeThreshold);
-            const overtimePay = overtimeHours * (EBA_DATA.OvertimeRate[finalRank] || 0);
+            let allowancePay = 0;
+            const allowanceRate = EBA_DATA.ExtendedDutyRate[finalRank] || 0;
+            detectedChanges.forEach(change => {
+                if (change.type === 'RDO_WORKED' || change.type === 'OUTSIDE_BUFFER') {
+                    allowancePay += change.hours * allowanceRate;
+                }
+            });
 
-            const fortnightlyBasePay = (annualSalary / 365.25) * 14;
-            const totalGrossPay = fortnightlyBasePay + productivityBonus + overtimePay;
+            const monthlyBasePay = annualSalary / 12;
+            const totalGrossPay = monthlyBasePay + allowancePay;
 
-            // Store all results in the global variable
             calculationResults = {
                 finalRank,
-                homeBase: rosterData.homeBase,
                 annualSalary,
-                fortnightlyBasePay,
-                bonusHours,
-                productivityBonus,
-                overtimeHours,
-                overtimePay,
-                totalBlockHours,
-                totalDutyHours,
-                totalGrossPay
+                monthlyBasePay,
+                allowancePay,
+                totalGrossPay,
+                detectedChanges
             };
             
-            // Update and show the modal
             updateModalContent();
             showResultsModal();
         }
